@@ -1,0 +1,60 @@
+<mxfile host="Electron" agent="Mozilla/5.0" version="24.0.0">
+  <diagram id="AIRagPipelineTemplate" name="RAG Pipeline Architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <!-- Title -->
+        <mxCell id="title" value="Retrieval-Augmented Generation (RAG) Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="334.5" y="30" width="500" height="40" as="geometry" />
+        </mxCell>
+        <!-- Ingestion Pipeline -->
+        <mxCell id="ingestionBox" value="Data Ingestion &amp; Indexing Pipeline" style="swimlane;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#93C5FD;fontStyle=1;fontColor=#1E40AF;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="1020" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="docSource" value="Raw Document Sources&#xa;(PDFs, Docs, Web, APIs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3B82F6;fontStyle=1;fontColor=#1E3A8A;" vertex="1" parent="ingestionBox">
+          <mxGeometry x="30" y="70" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="chunker" value="Text Extractor &amp;&#xa;Chunking Engine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3B82F6;fontStyle=1;fontColor=#1E3A8A;" vertex="1" parent="ingestionBox">
+          <mxGeometry x="270" y="70" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="embedder" value="Embedding Model&#xa;(text-embedding-004)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3B82F6;fontStyle=1;fontColor=#1E3A8A;" vertex="1" parent="ingestionBox">
+          <mxGeometry x="510" y="70" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="vectorStore" value="Vector Database&#xa;(Vector Store Index)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFFFFF;strokeColor=#2563EB;fontStyle=1;fontColor=#1D4ED8;" vertex="1" parent="ingestionBox">
+          <mxGeometry x="760" y="55" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;strokeWidth=2;" edge="1" parent="ingestionBox" source="docSource" target="chunker" />
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;strokeWidth=2;" edge="1" parent="ingestionBox" source="chunker" target="embedder" />
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;strokeWidth=2;" edge="1" parent="ingestionBox" source="embedder" target="vectorStore" />
+        <!-- Query & Generation Pipeline -->
+        <mxCell id="queryBox" value="User Query &amp; RAG Generation Pipeline" style="swimlane;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#E9D5FF;fontStyle=1;fontColor=#6B21A8;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="340" width="1020" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="userQuery" value="User Prompt / Query" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;fontStyle=1;fontColor=#581C87;" vertex="1" parent="queryBox">
+          <mxGeometry x="30" y="90" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="queryEmbed" value="Query Embedder" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;fontStyle=1;fontColor=#581C87;" vertex="1" parent="queryBox">
+          <mxGeometry x="250" y="90" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="retriever" value="Semantic Similarity Search&#xa;&amp; Reranker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;fontStyle=1;fontColor=#581C87;" vertex="1" parent="queryBox">
+          <mxGeometry x="470" y="90" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="llmGenerator" value="LLM Synthesis Engine&#xa;(Prompt + Retrieved Context)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;fontStyle=1;fontColor=#581C87;" vertex="1" parent="queryBox">
+          <mxGeometry x="700" y="90" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="userResponse" value="Grounded Answer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontStyle=1;fontColor=#15803D;" vertex="1" parent="queryBox">
+          <mxGeometry x="910" y="90" width="90" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="q1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#7E22CE;strokeWidth=2;" edge="1" parent="queryBox" source="userQuery" target="queryEmbed" />
+        <mxCell id="q2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#7E22CE;strokeWidth=2;" edge="1" parent="queryBox" source="queryEmbed" target="retriever" />
+        <mxCell id="q3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#7E22CE;strokeWidth=2;" edge="1" parent="queryBox" source="retriever" target="llmGenerator" />
+        <mxCell id="q4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#16A34A;strokeWidth=2;" edge="1" parent="queryBox" source="llmGenerator" target="userResponse" />
+        <!-- Cross link from retriever to vector store -->
+        <mxCell id="vLink" value="Top-K Context Retrieval" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#D97706;strokeWidth=2;dashed=1;" edge="1" parent="1" source="retriever" target="vectorStore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

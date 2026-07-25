@@ -1,0 +1,73 @@
+<mxfile host="Electron" agent="Mozilla/5.0" version="24.0.0">
+  <diagram id="CloudArchitectureTemplate" name="Cloud Architecture Overview">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <!-- Title -->
+        <mxCell id="title" value="AI Solution Architecture - Enterprise Cloud Infrastructure" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#1E293B;" vertex="1" parent="1">
+          <mxGeometry x="334.5" y="30" width="500" height="40" as="geometry" />
+        </mxCell>
+        <!-- Client Layer -->
+        <mxCell id="clientGroup" value="Client Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;fontStyle=1;fontColor=#334155;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="220" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="webApp" value="Web Frontend App&#xa;(React / Next.js)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="clientGroup">
+          <mxGeometry x="30" y="60" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mobileApp" value="Mobile Client&#xa;(iOS / Android)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="clientGroup">
+          <mxGeometry x="30" y="160" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="apiConsumer" value="External API Clients" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="clientGroup">
+          <mxGeometry x="30" y="260" width="160" height="60" as="geometry" />
+        </mxCell>
+        <!-- Gateway Layer -->
+        <mxCell id="gatewayGroup" value="API Gateway &amp; Auth" style="swimlane;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;fontStyle=1;fontColor=#334155;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="100" width="200" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="apiGateway" value="API Gateway&#xa;(Rate Limiting &amp; Routing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDFA;strokeColor=#14B8A6;fontColor=#0F766E;fontStyle=1;" vertex="1" parent="gatewayGroup">
+          <mxGeometry x="20" y="80" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="authService" value="Auth &amp; IAM Provider&#xa;(OAuth2 / OIDC)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;fontColor=#991B1B;fontStyle=1;" vertex="1" parent="gatewayGroup">
+          <mxGeometry x="20" y="230" width="160" height="70" as="geometry" />
+        </mxCell>
+        <!-- Microservices & AI Layer -->
+        <mxCell id="backendGroup" value="Backend Services &amp; AI Engine" style="swimlane;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;fontStyle=1;fontColor=#334155;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="100" width="240" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="coreService" value="Core Backend Service&#xa;(Python / Node.js)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;fontColor=#5B21B6;fontStyle=1;" vertex="1" parent="backendGroup">
+          <mxGeometry x="40" y="60" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="aiOrchestrator" value="AI Orchestrator Engine&#xa;(LangChain / Agentic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#A855F7;fontColor=#6B21A8;fontStyle=1;" vertex="1" parent="backendGroup">
+          <mxGeometry x="40" y="170" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="llmInference" value="LLM Model Provider&#xa;(Gemini / OpenAI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F97316;fontColor=#C2410C;fontStyle=1;" vertex="1" parent="backendGroup">
+          <mxGeometry x="40" y="280" width="160" height="60" as="geometry" />
+        </mxCell>
+        <!-- Data Layer -->
+        <mxCell id="dataGroup" value="Data &amp; Persistence Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;fontStyle=1;fontColor=#334155;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="890" y="100" width="220" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="relationalDb" value="Relational DB&#xa;(PostgreSQL)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ECFDF5;strokeColor=#10B981;fontColor=#065F46;fontStyle=1;" vertex="1" parent="dataGroup">
+          <mxGeometry x="40" y="50" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="vectorDb" value="Vector Database&#xa;(pgvector / Pinecone)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#F0FDF4;strokeColor=#22C55E;fontColor=#15803D;fontStyle=1;" vertex="1" parent="dataGroup">
+          <mxGeometry x="40" y="170" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="cacheDb" value="In-Memory Cache&#xa;(Redis)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFF1F2;strokeColor=#F43F5E;fontColor=#9F1239;fontStyle=1;" vertex="1" parent="dataGroup">
+          <mxGeometry x="40" y="290" width="140" height="80" as="geometry" />
+        </mxCell>
+        <!-- Connectors -->
+        <mxCell id="conn1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#94A3B8;strokeWidth=2;" edge="1" parent="1" source="clientGroup" target="gatewayGroup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="conn2" value="gRPC / REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#94A3B8;strokeWidth=2;" edge="1" parent="1" source="gatewayGroup" target="backendGroup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="conn3" value="SQL / Embeddings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthoLoop=1;jettySize=auto;html=1;strokeColor=#94A3B8;strokeWidth=2;" edge="1" parent="1" source="backendGroup" target="dataGroup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

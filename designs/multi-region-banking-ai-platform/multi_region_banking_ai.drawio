@@ -1,0 +1,518 @@
+<mxfile host="Electron" modified="2026-07-25T23:35:00.000Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.8 Chrome/114.0.5735.289 Electron/25.8.0 Safari/537.36" version="21.6.8" type="device">
+  
+  <!-- Page 1: Logical Architecture View -->
+  <diagram id="view-1-logical" name="1. Logical Architecture View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- User & Ingestion Layer -->
+        <mxCell id="user-layer" value="1. Client &amp; Omnichannel Ingestion Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontStyle=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1520" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="banker-portal" value="Global Banker Portal&#xa;(React / TS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="user-layer">
+          <mxGeometry x="50" y="45" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="compliance-dash" value="Compliance &amp; AML Audit UI&#xa;(HITL Portal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="user-layer">
+          <mxGeometry x="260" y="45" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile-client" value="Mobile Banking Client&#xa;(iOS / Android)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="user-layer">
+          <mxGeometry x="490" y="45" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="teams-bot" value="Enterprise Teams / Slack Bot" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="user-layer">
+          <mxGeometry x="690" y="45" width="190" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="geodns-waf" value="Cloudflare Enterprise WAF&#xa;&amp; GeoDNS Router" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="user-layer">
+          <mxGeometry x="920" y="45" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ingest-parser" value="SWIFT MT/MX &amp; Doc Parser&#xa;(Document Ingestion Engine)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="user-layer">
+          <mxGeometry x="1170" y="45" width="230" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Sovereign Security & Gateways -->
+        <mxCell id="api-layer" value="2. Sovereign Security &amp; Sanitization Gateway Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="1520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="api-gateway" value="Envoy API Gateway&#xa;(OAuth2 / OIDC JWT)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="api-layer">
+          <mxGeometry x="50" y="45" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pii-redactor" value="Microsoft Presidio Engine&#xa;(PII / PCI-DSS Masking)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="api-layer">
+          <mxGeometry x="290" y="45" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nemo-guardrail" value="NeMo Input Guardrails&#xa;(Prompt Injection Filter)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="api-layer">
+          <mxGeometry x="550" y="45" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="semantic-cache" value="Redis Semantic Cache&#xa;(Similarity &gt; 0.94, &lt;50ms)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="api-layer">
+          <mxGeometry x="810" y="40" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="zero-trust-proxy" value="mTLS Zero-Trust Proxy&#xa;(HashiCorp Vault Secrets)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="api-layer">
+          <mxGeometry x="1060" y="45" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- LangGraph Multi-Agent Orchestration -->
+        <mxCell id="agent-layer" value="3. LangGraph Multi-Agent Financial Crime &amp; RAG Orchestration Subsystem" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="350" width="1520" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="supervisor-agent" value="Supervisor Agent&#xa;(Intent &amp; Workflow Manager)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="agent-layer">
+          <mxGeometry x="50" y="50" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sanctions-agent" value="Sanctions Screening Agent&#xa;(OFAC / EU / UN Matcher)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="agent-layer">
+          <mxGeometry x="310" y="50" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tracing-agent" value="Transaction Tracing Agent&#xa;(SWIFT MT/MX Graph Analyzer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="agent-layer">
+          <mxGeometry x="570" y="50" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sar-agent" value="SAR Generator Agent&#xa;(Narrative Drafting &amp; Citation)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="agent-layer">
+          <mxGeometry x="840" y="50" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hitl-gate" value="Compliance HITL Gate&#xa;(Human Electronic Sign-Off)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="agent-layer">
+          <mxGeometry x="1100" y="50" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hybrid-retriever" value="Hybrid Dense-Sparse Retriever&#xa;(OpenSearch HNSW + BM25 Reranker)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="agent-layer">
+          <mxGeometry x="310" y="145" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="litellm-gateway" value="LiteLLM Resilient Fallback Gateway&#xa;(Circuit Breakers &amp; Load Balancing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="agent-layer">
+          <mxGeometry x="630" y="145" width="290" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Model Inference & Persistence Layer -->
+        <mxCell id="model-layer" value="4. Model Inference &amp; Data Persistence Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="620" width="1520" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="primary-llm" value="Primary Managed LLM&#xa;(AWS Bedrock / Azure OpenAI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="model-layer">
+          <mxGeometry x="50" y="60" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="local-slm" value="Fallback Local SLM Engine&#xa;(vLLM Llama-3.1-70B on GPU)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="model-layer">
+          <mxGeometry x="320" y="60" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="vector-db" value="Regional Vector DB&#xa;(OpenSearch HNSW Cluster)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="model-layer">
+          <mxGeometry x="600" y="55" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="core-db" value="PostgreSQL &amp; S3 Storage&#xa;(KMS CMK Encrypted)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="model-layer">
+          <mxGeometry x="840" y="55" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="audit-log" value="ELK Compliance Audit Logger&#xa;(EU AI Act &amp; Fed SR 11-7)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="model-layer">
+          <mxGeometry x="1090" y="55" width="230" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Labeled Connections -->
+        <mxCell id="c1" value="HTTPS / WSS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="banker-portal" target="api-gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="mTLS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="api-gateway" target="pii-redactor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Sanitized Prompt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="pii-redactor" target="nemo-guardrail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Hash Query" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="nemo-guardrail" target="semantic-cache">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Cache Miss" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="semantic-cache" target="supervisor-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="Sanctions Check" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="supervisor-agent" target="sanctions-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="Graph Tracing" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="supervisor-agent" target="tracing-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="SAR Synthesis" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="supervisor-agent" target="sar-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="Low Confidence Flag" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="sar-agent" target="hitl-gate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="Hybrid Query" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="supervisor-agent" target="hybrid-retriever">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="HNSW Dense Vector" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;" edge="1" parent="1" source="hybrid-retriever" target="vector-db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="Context + Prompt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;" edge="1" parent="1" source="hybrid-retriever" target="litellm-gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="Primary REST API" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;" edge="1" parent="1" source="litellm-gateway" target="primary-llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="Offline GPU Fallback" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;" edge="1" parent="1" source="litellm-gateway" target="local-slm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 2: Multi-Region Sovereign Infrastructure View -->
+  <diagram id="view-2-infra" name="2. Multi-Region Sovereign Infrastructure View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Region 1: North America (AWS us-east-1) -->
+        <mxCell id="na-hub" value="North America Hub (AWS us-east-1) - Fed/OCC/SEC Sovereign Stack" style="swimlane;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="480" height="740" as="geometry" />
+        </mxCell>
+        <mxCell id="na-alb" value="Public Subnet: AWS Application Load Balancer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="na-hub">
+          <mxGeometry x="40" y="50" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="na-eks" value="Private App Subnet: AWS EKS Cluster&#xa;(LangGraph, Envoy API Gateway, LiteLLM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="na-hub">
+          <mxGeometry x="40" y="130" width="400" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="na-gpu" value="EKS GPU Node Pool (4x NVIDIA A10G)&#xa;vLLM Sovereign Llama-3.1-70B Engine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="na-hub">
+          <mxGeometry x="40" y="260" width="400" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="na-opensearch" value="Private Data Subnet: Amazon OpenSearch&#xa;(HNSW Vector Index &amp; BM25)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="na-hub">
+          <mxGeometry x="40" y="360" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="na-kms" value="AWS KMS Key (Customer Managed Key CMK)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="na-hub">
+          <mxGeometry x="40" y="470" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="na-bedrock" value="AWS Bedrock Endpoint (Zero-Data Retention Agreement)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="na-hub">
+          <mxGeometry x="40" y="540" width="400" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Region 2: Europe Sovereign Hub (Azure Frankfurt) -->
+        <mxCell id="eu-hub" value="Europe Sovereign Hub (Azure Frankfurt) - EU GDPR / EU AI Act Stack" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="560" y="40" width="480" height="740" as="geometry" />
+        </mxCell>
+        <mxCell id="eu-appgw" value="Public Subnet: Azure Application Gateway WAF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="eu-hub">
+          <mxGeometry x="40" y="50" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="eu-aks" value="Private App Subnet: Azure AKS Cluster&#xa;(LangGraph, Presidio PII Engine, Envoy)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="eu-hub">
+          <mxGeometry x="40" y="130" width="400" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="eu-gpu" value="AKS GPU Node Pool (Standard_NC24s_v3)&#xa;vLLM Local EU Sovereign Inference Engine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="eu-hub">
+          <mxGeometry x="40" y="260" width="400" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="eu-search" value="Private Data Subnet: Azure AI Search&#xa;(EU Sovereign Vector Store)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="eu-hub">
+          <mxGeometry x="40" y="360" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="eu-kv" value="Azure Key Vault (HSM Customer Managed Key)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="eu-hub">
+          <mxGeometry x="40" y="470" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="eu-oai" value="Azure OpenAI EU Sovereign Private Endpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="eu-hub">
+          <mxGeometry x="40" y="540" width="400" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Region 3: APAC Hub (AWS Singapore) -->
+        <mxCell id="apac-hub" value="APAC Hub (AWS ap-southeast-1) - MAS TRM / HKMA Stack" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="40" width="480" height="740" as="geometry" />
+        </mxCell>
+        <mxCell id="apac-alb" value="Public Subnet: AWS ALB (Singapore)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="apac-hub">
+          <mxGeometry x="40" y="50" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="apac-eks" value="Private App Subnet: AWS EKS Cluster (SG)&#xa;(LangGraph, Envoy Gateway, LiteLLM Router)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="apac-hub">
+          <mxGeometry x="40" y="130" width="400" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="apac-opensearch" value="Private Data Subnet: OpenSearch Vector DB" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="apac-hub">
+          <mxGeometry x="40" y="360" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="apac-kms" value="AWS KMS Key (Singapore Region)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="apac-hub">
+          <mxGeometry x="40" y="470" width="400" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Cross-Region Links -->
+        <mxCell id="link-na-eu" value="Transit Gateway (Metadata Only)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;dashed=1;" edge="1" parent="1" source="na-eks" target="eu-aks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link-eu-apac" value="VPC Peering (Metadata Only)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;dashed=1;" edge="1" parent="1" source="eu-aks" target="apac-eks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 3: Security & Privacy View -->
+  <diagram id="view-3-security" name="3. Security &amp; Privacy Architecture View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sec-title" value="Zero-Retention &amp; Data Sovereignty Security Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="600" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sec-box-1" value="1. Perimeter Defense&#xa;(Cloudflare WAF + DDoS Protection)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="120" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sec-box-2" value="2. Identity &amp; Auth Gate&#xa;(OAuth2 / OIDC JWT + FGBAC Roles)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="120" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sec-box-3" value="3. Regional PII Redaction Engine&#xa;(Presidio: Mask Name, SSN, Account #)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="720" y="120" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sec-box-4" value="4. Prompt Safety Guardrails&#xa;(NeMo Guardrails: Jailbreak Defense)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="120" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sec-box-5" value="5. Encryption at Rest &amp; Transit&#xa;(AES-256 KMS CMK + TLS 1.3 mTLS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="260" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sec-box-6" value="6. Row-Level Tenant Vector Isolation&#xa;(OpenSearch RLS by Region &amp; Role)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="720" y="260" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sec-box-7" value="7. Zero-Data Retention Agreement&#xa;(AWS Bedrock &amp; Azure OpenAI Endpoints)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="260" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Security Connectors -->
+        <mxCell id="s1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="sec-box-1" target="sec-box-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="Validated Token" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="sec-box-2" target="sec-box-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="Sanitized Prompt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="sec-box-3" target="sec-box-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 4: Observability, Logging & Monitoring View -->
+  <diagram id="view-4-obs" name="4. Observability &amp; Monitoring View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="obs-title" value="OpenTelemetry Distributed Tracing &amp; Compliance Audit View" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="600" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="otel-collector" value="OpenTelemetry Collector Container&#xa;(Distributed Spans &amp; Metrics)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="140" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="prometheus" value="Prometheus Metrics Engine&#xa;(GPU % / TTFT Latency / Token RPS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="140" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="grafana" value="Grafana Real-Time Dashboards&#xa;(FinOps Token &amp; Latency Analytics)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="770" y="140" width="250" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="elk-audit" value="ELK Stack Audit Logging&#xa;(EU AI Act &amp; Fed SR 11-7 Audit Trail)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="130" width="260" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Observability Connectors -->
+        <mxCell id="o1" value="Metrics Export" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="otel-collector" target="prometheus">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o2" value="PromQL Queries" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="prometheus" target="grafana">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o3" value="Span Audit Stream" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="otel-collector" target="elk-audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 5: MLOps CI/CD View -->
+  <diagram id="view-5-cicd" name="5. MLOps CI/CD Pipeline View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cicd-step1" value="1. Developer Git Push&#xa;(Branch: main / release)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="120" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-step2" value="2. GitHub Actions CI&#xa;(Ruff, Bandit, Security Lint)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="120" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-step3" value="3. Ragas Accuracy Gate&#xa;(Faithfulness &gt; 0.92 Benchmark)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="120" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-step4" value="4. ArgoCD GitOps Controller&#xa;(SHA-256 Model Verification)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="120" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-step5" value="5. Canary Sync to EKS / AKS&#xa;(Multi-Region Sovereign Clusters)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="120" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Pipeline Connectors -->
+        <mxCell id="p1" value="Trigger Build" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="cicd-step1" target="cicd-step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" value="Pass Static Analysis" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="cicd-step2" target="cicd-step3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" value="Score &gt; 0.92" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="cicd-step3" target="cicd-step4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" value="GitOps Sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="cicd-step4" target="cicd-step5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 6: Data Lineage & Sovereignty View -->
+  <diagram id="view-6-data" name="6. Data Lineage &amp; Sovereignty View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="data-doc" value="Raw Banking Document&#xa;(Regional Encrypted S3 / Blob)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="120" width="210" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="data-chunk" value="PII Masked Text Chunks&#xa;(Presidio Sanitization Engine)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="130" width="230" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="data-vec" value="Dense Vector Embeddings&#xa;(Regional OpenSearch HNSW)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="620" y="120" width="230" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="data-output" value="Audit Lineage Record&#xa;(EU AI Act Title III Compliance)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="900" y="120" width="230" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- Lineage Connectors -->
+        <mxCell id="d1" value="Ingest &amp; Extract" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="data-doc" target="data-chunk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="Compute Embeddings" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="data-chunk" target="data-vec">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="Register SHA-256 Provenance" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="data-vec" target="data-output">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 7: Resilience & LLM Fallback View -->
+  <diagram id="view-7-fallback" name="7. Resilience &amp; LLM Fallback View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="fallback-gateway" value="LiteLLM Resilient Router&#xa;(Circuit Breakers &amp; Rate Limits)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="160" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="prim-llm" value="1st Choice: Primary Managed LLM&#xa;(AWS Bedrock / Azure OpenAI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="80" width="310" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="sec-llm" value="2nd Choice: Cross-Cloud Failover&#xa;(Secondary Cloud Provider API)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="170" width="310" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="local-slm-fb" value="3rd Choice Emergency Sovereign Fallback:&#xa;Regional vLLM Llama-3.1-70B on GPU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="260" width="310" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Fallback Connectors -->
+        <mxCell id="f1" value="Normal Operation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="fallback-gateway" target="prim-llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" value="Rate Limit / Timeout" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="fallback-gateway" target="sec-llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" value="Network Isolation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="fallback-gateway" target="local-slm-fb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 8: Multi-Agent AML Workflow View -->
+  <diagram id="view-8-agent" name="8. Multi-Agent AML Workflow View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="spv-agent" value="LangGraph Supervisor Agent&#xa;(Intent &amp; Workflow Orchestrator)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="140" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="worker-1" value="Sanctions Screening Agent&#xa;(OFAC / UN / EU Database Matcher)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="60" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="worker-2" value="SWIFT Transaction Graph Agent&#xa;(MT103 / MX Layering Analyzer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="150" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="worker-3" value="SAR Narrative Generator Agent&#xa;(Regulatory Narrative Synthesizer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="240" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hitl-review" value="Compliance Officer HITL Approval Portal&#xa;(Mandatory Electronic Sign-Off)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="140" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Agent Workflow Connectors -->
+        <mxCell id="a1" value="Screen Sanctions" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="spv-agent" target="worker-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="Trace Graph History" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="spv-agent" target="worker-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="Draft SAR Narrative" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="spv-agent" target="worker-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="Escalate Flagged SAR" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="worker-3" target="hitl-review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 9: FinOps Caching View -->
+  <diagram id="view-9-finops" name="9. FinOps &amp; Caching View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="prompt-in" value="User Banking Prompt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="140" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cache-check" value="Redis Semantic Cache&#xa;(Embed Distance &lt; 0.06)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="125" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="cache-hit" value="Cache Hit (38% of Traffic)&#xa;Return Cached Answer (&lt;50ms, $0 Cost)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="70" width="310" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="cache-miss" value="Cache Miss: Route via Model Cascading&#xa;(Simple -&gt; 8B SLM, Complex -&gt; 70B LLM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="180" width="310" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- FinOps Connectors -->
+        <mxCell id="m1" value="Lookup" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="prompt-in" target="cache-check">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m2" value="Distance &lt; 0.06" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="cache-check" target="cache-hit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m3" value="Distance &gt;= 0.06" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;" edge="1" parent="1" source="cache-check" target="cache-miss">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- Page 10: Model Governance & HITL Evaluation View -->
+  <diagram id="view-10-mrm" name="10. Model Governance &amp; HITL View">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="mrm-eval" value="Continuous Ragas Evaluator&#xa;(Faithfulness &amp; Context Recall)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="120" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mrm-score" value="Confidence Score &gt; 0.90?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="110" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="mrm-auto" value="Auto-Approve Response&#xa;(Log to Audit Store)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="70" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mrm-hitl" value="Escalate to Human Compliance Review&#xa;(Mandatory Audit Sign-Off)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="190" width="280" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Governance Connectors -->
+        <mxCell id="g1" value="Evaluate Response" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="mrm-eval" target="mrm-score">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g2" value="Yes (&gt;= 0.90)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="mrm-score" target="mrm-auto">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g3" value="No (&lt; 0.90)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthoLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="mrm-score" target="mrm-hitl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

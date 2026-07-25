@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/mcp-config.json",
+  "mcpServers": {
+    "drawio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@drawio/mcp"
+      ],
+      "env": {}
+    }
+  }
+}

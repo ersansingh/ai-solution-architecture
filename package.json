@@ -1,0 +1,24 @@
+{
+  "name": "ai-solution-architecture",
+  "version": "1.0.0",
+  "description": "AI Solution Architecture designs, templates, and Draw.io MCP server integration.",
+  "main": "index.js",
+  "scripts": {
+    "mcp:drawio": "npx -y @drawio/mcp",
+    "test": "node -e \"console.log('Draw.io MCP configuration ready')\""
+  },
+  "keywords": [
+    "ai",
+    "solution-architecture",
+    "drawio",
+    "mcp",
+    "diagrams",
+    "architecture-diagrams",
+    "model-context-protocol"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@drawio/mcp": "^1.5.0"
+  }
+}
