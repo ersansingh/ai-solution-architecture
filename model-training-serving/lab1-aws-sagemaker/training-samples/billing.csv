@@ -1,0 +1,201 @@
+customer_id,monthly_charges,total_charges,payment_method,outstanding_balance,contract_type
+100000,38.14,492.6,Credit Card,11.43,One Year
+100001,110.76,6392.13,UPI,14.53,Month-to-Month
+100002,45.0,2118.91,UPI,98.31,One Year
+100003,80.09,754.89,Bank Transfer,12.71,Two Year
+100004,79.65,3218.63,UPI,19.21,Month-to-Month
+100005,97.47,5354.46,Credit Card,0.0,Month-to-Month
+100006,138.64,8253.86,Bank Transfer,58.88,Month-to-Month
+100007,115.15,3632.85,Bank Transfer,75.58,Two Year
+100008,78.69,3097.18,Credit Card,0.0,Month-to-Month
+100009,37.2,1426.3,Debit Card,4.76,One Year
+100010,72.34,3801.88,Bank Transfer,37.79,Two Year
+100011,41.62,2910.53,Debit Card,66.29,Month-to-Month
+100012,145.93,9209.43,UPI,69.61,One Year
+100013,30.66,1625.79,UPI,38.63,One Year
+100014,89.89,900.08,UPI,80.26,Month-to-Month
+100015,91.92,1609.03,UPI,0.0,One Year
+100016,116.36,126.7,Credit Card,93.51,Month-to-Month
+100017,108.67,5140.88,Debit Card,82.29,Month-to-Month
+100018,122.36,6406.7,Debit Card,32.7,Two Year
+100019,34.99,1353.72,UPI,92.57,Month-to-Month
+100020,87.59,2251.05,Bank Transfer,9.98,One Year
+100021,74.66,3223.79,Bank Transfer,31.48,One Year
+100022,47.78,2001.4,Bank Transfer,2.29,Two Year
+100023,73.88,469.23,Debit Card,0.0,Month-to-Month
+100024,37.33,2232.73,UPI,100.17,One Year
+100025,77.18,2821.19,UPI,0.0,Month-to-Month
+100026,80.57,637.58,Debit Card,63.79,Two Year
+100027,55.48,3880.73,Debit Card,0.0,Month-to-Month
+100028,53.82,934.23,UPI,22.75,Month-to-Month
+100029,45.92,317.36,Bank Transfer,0.0,Month-to-Month
+100030,95.23,1514.23,Debit Card,0.0,One Year
+100031,104.18,5632.43,Debit Card,58.32,Month-to-Month
+100032,127.35,8805.64,Bank Transfer,28.27,Month-to-Month
+100033,56.36,3569.91,Credit Card,5.11,Two Year
+100034,48.81,3113.39,UPI,0.0,Month-to-Month
+100035,48.13,1200.09,UPI,28.23,One Year
+100036,57.98,1074.48,Debit Card,25.02,One Year
+100037,39.4,2061.37,Bank Transfer,23.78,Month-to-Month
+100038,101.32,4005.73,Bank Transfer,27.28,Month-to-Month
+100039,96.67,1027.48,Credit Card,34.03,Month-to-Month
+100040,59.53,2183.11,Debit Card,0.0,Month-to-Month
+100041,104.7,711.41,Debit Card,40.59,Month-to-Month
+100042,106.14,2209.03,Credit Card,0.0,One Year
+100043,54.72,3428.28,Debit Card,29.73,Month-to-Month
+100044,57.94,968.12,Debit Card,49.67,Month-to-Month
+100045,58.81,2075.74,Debit Card,16.3,Two Year
+100046,69.79,3002.38,UPI,17.92,Month-to-Month
+100047,38.74,577.81,Credit Card,0.0,Two Year
+100048,102.05,6513.34,Credit Card,3.33,Two Year
+100049,89.05,4109.49,Bank Transfer,27.34,One Year
+100050,91.06,96.89,UPI,0.0,Two Year
+100051,71.45,2616.72,Credit Card,0.0,Two Year
+100052,122.52,2112.03,Bank Transfer,48.23,Month-to-Month
+100053,38.3,1778.5,Debit Card,37.95,Two Year
+100054,142.24,6749.19,Credit Card,0.0,Month-to-Month
+100055,32.63,273.23,Debit Card,0.0,Month-to-Month
+100056,77.64,4205.03,Credit Card,58.0,Two Year
+100057,122.31,307.97,Bank Transfer,15.42,Two Year
+100058,132.64,4303.48,Bank Transfer,13.95,Month-to-Month
+100059,121.82,1778.88,Debit Card,16.22,One Year
+100060,39.28,318.04,UPI,0.0,One Year
+100061,114.85,5015.91,UPI,56.71,Month-to-Month
+100062,35.89,580.85,Debit Card,63.19,One Year
+100063,94.63,4319.79,Credit Card,0.0,Two Year
+100064,116.33,2304.63,Bank Transfer,0.0,Month-to-Month
+100065,98.92,1070.96,Credit Card,50.87,Month-to-Month
+100066,119.76,1010.91,Credit Card,86.24,Month-to-Month
+100067,94.85,5326.28,Debit Card,23.22,One Year
+100068,133.17,4310.6,Bank Transfer,70.25,Month-to-Month
+100069,143.67,3330.0,Debit Card,46.16,Month-to-Month
+100070,85.95,3314.13,Credit Card,0.0,Month-to-Month
+100071,33.46,2120.89,Credit Card,44.17,Month-to-Month
+100072,120.68,5707.74,UPI,36.32,Month-to-Month
+100073,68.97,3575.8,Credit Card,27.17,Two Year
+100074,30.03,1960.78,Credit Card,0.0,Month-to-Month
+100075,99.38,646.76,Bank Transfer,0.0,One Year
+100076,37.99,2533.32,UPI,2.47,One Year
+100077,73.94,866.57,Debit Card,13.75,Month-to-Month
+100078,80.98,427.97,Credit Card,17.17,Two Year
+100079,128.77,6953.55,Bank Transfer,95.88,One Year
+100080,133.53,8988.75,UPI,19.83,Month-to-Month
+100081,82.21,3553.7,Debit Card,27.24,Month-to-Month
+100082,44.84,3110.19,UPI,9.58,One Year
+100083,75.98,2758.32,UPI,90.93,Month-to-Month
+100084,149.76,6694.11,Credit Card,70.77,Two Year
+100085,78.49,3663.22,Credit Card,45.88,Month-to-Month
+100086,120.75,7768.81,UPI,0.0,Month-to-Month
+100087,112.54,1098.32,UPI,0.0,One Year
+100088,60.21,2990.0,Debit Card,28.95,One Year
+100089,138.39,3232.44,Bank Transfer,0.0,Month-to-Month
+100090,59.37,1550.32,Bank Transfer,0.0,One Year
+100091,90.93,4938.6,Bank Transfer,0.0,Month-to-Month
+100092,131.99,7883.26,UPI,40.92,Two Year
+100093,132.34,2498.09,Bank Transfer,16.74,Two Year
+100094,79.44,5032.31,Credit Card,64.41,One Year
+100095,94.14,4834.21,Credit Card,34.6,One Year
+100096,86.19,6205.7,Bank Transfer,3.62,Month-to-Month
+100097,126.05,5519.87,Debit Card,0.0,One Year
+100098,143.27,6942.21,UPI,0.0,Month-to-Month
+100099,79.76,4951.75,UPI,40.17,One Year
+100100,141.38,8966.02,Credit Card,0.0,Month-to-Month
+100101,46.27,2089.87,UPI,0.0,Two Year
+100102,120.2,6271.64,Bank Transfer,0.0,One Year
+100103,134.69,3975.86,Debit Card,71.64,Two Year
+100104,80.84,4708.12,Bank Transfer,13.16,Month-to-Month
+100105,147.62,6195.53,Credit Card,0.0,Two Year
+100106,40.76,1300.77,UPI,0.0,Two Year
+100107,108.44,5224.28,Debit Card,0.0,One Year
+100108,77.44,5379.42,Debit Card,60.21,One Year
+100109,126.14,5094.76,Credit Card,45.85,One Year
+100110,78.31,1493.0,Credit Card,0.0,Month-to-Month
+100111,52.18,3100.03,Credit Card,0.0,Month-to-Month
+100112,50.46,296.67,Credit Card,100.81,Two Year
+100113,92.37,2697.06,Bank Transfer,117.86,One Year
+100114,43.9,2378.19,Bank Transfer,0.34,Month-to-Month
+100115,32.02,1421.78,UPI,79.57,Month-to-Month
+100116,110.43,3132.79,Bank Transfer,0.0,Month-to-Month
+100117,60.68,3610.62,Bank Transfer,0.0,Two Year
+100118,105.1,5186.87,Debit Card,76.05,Month-to-Month
+100119,73.61,5073.99,Bank Transfer,8.03,Month-to-Month
+100120,88.82,6083.53,Credit Card,0.0,Two Year
+100121,144.71,5056.65,Bank Transfer,19.14,Month-to-Month
+100122,129.89,288.76,Credit Card,90.82,Month-to-Month
+100123,96.31,532.0,Debit Card,0.0,One Year
+100124,32.7,535.03,Debit Card,54.88,Month-to-Month
+100125,29.56,1402.03,Bank Transfer,13.1,Month-to-Month
+100126,78.35,1107.85,Credit Card,63.0,Month-to-Month
+100127,38.05,1177.83,Credit Card,47.14,Month-to-Month
+100128,20.88,522.02,Debit Card,31.92,Two Year
+100129,68.89,2887.79,Credit Card,0.0,Month-to-Month
+100130,59.37,3097.15,Debit Card,23.81,Month-to-Month
+100131,104.11,1366.4,Debit Card,4.79,Two Year
+100132,70.85,5155.67,Bank Transfer,14.99,One Year
+100133,76.96,5195.67,UPI,27.38,Month-to-Month
+100134,123.71,2623.86,Debit Card,0.0,Month-to-Month
+100135,45.62,561.47,Debit Card,59.9,One Year
+100136,37.41,784.0,Bank Transfer,4.55,Month-to-Month
+100137,38.24,842.44,Credit Card,35.78,Month-to-Month
+100138,129.19,6844.81,Credit Card,28.03,Month-to-Month
+100139,127.03,1878.82,Credit Card,0.0,Two Year
+100140,132.49,7607.9,Bank Transfer,39.83,Two Year
+100141,58.04,4019.31,Credit Card,0.0,Two Year
+100142,95.07,2995.98,Debit Card,83.31,Month-to-Month
+100143,106.34,77.98,Debit Card,52.52,Month-to-Month
+100144,119.09,1933.72,Debit Card,111.63,One Year
+100145,68.34,900.84,Debit Card,29.41,Month-to-Month
+100146,21.05,326.56,Debit Card,4.3,Month-to-Month
+100147,65.65,1189.96,Debit Card,0.0,One Year
+100148,103.8,4205.43,UPI,31.09,One Year
+100149,97.21,4866.16,UPI,0.0,Two Year
+100150,48.05,228.67,Debit Card,0.0,Two Year
+100151,86.47,1670.04,UPI,17.66,Two Year
+100152,116.42,1794.43,Bank Transfer,12.82,Month-to-Month
+100153,55.36,798.53,Credit Card,0.0,One Year
+100154,51.79,771.2,Bank Transfer,63.87,Month-to-Month
+100155,124.56,6075.16,Credit Card,111.67,Two Year
+100156,96.92,3778.55,Bank Transfer,14.47,One Year
+100157,46.68,2103.86,Credit Card,0.0,Month-to-Month
+100158,37.36,2268.23,Credit Card,0.0,Month-to-Month
+100159,33.74,327.31,Credit Card,61.01,Month-to-Month
+100160,112.45,768.38,Credit Card,6.28,Month-to-Month
+100161,127.08,228.61,Credit Card,0.0,One Year
+100162,41.84,1813.9,Debit Card,0.0,Two Year
+100163,134.76,4308.13,Debit Card,20.96,Month-to-Month
+100164,43.38,1915.88,UPI,135.29,Month-to-Month
+100165,141.58,1230.95,Bank Transfer,64.47,Month-to-Month
+100166,27.3,1112.33,Debit Card,109.44,Month-to-Month
+100167,68.57,1391.21,Credit Card,20.38,Month-to-Month
+100168,115.42,5268.22,Credit Card,112.49,Month-to-Month
+100169,147.71,6285.11,Credit Card,0.0,Two Year
+100170,76.97,1061.51,Debit Card,0.0,Month-to-Month
+100171,64.44,270.91,Credit Card,21.7,Month-to-Month
+100172,146.67,3061.93,UPI,2.1,One Year
+100173,23.35,214.37,Credit Card,0.0,Month-to-Month
+100174,44.26,2121.92,UPI,24.7,Month-to-Month
+100175,134.62,6726.25,Credit Card,51.28,Month-to-Month
+100176,148.48,3699.08,Bank Transfer,35.58,Two Year
+100177,39.45,2656.47,Credit Card,0.0,One Year
+100178,38.7,2382.43,Credit Card,0.0,One Year
+100179,59.06,3769.52,UPI,70.06,One Year
+100180,112.24,878.6,Credit Card,57.62,One Year
+100181,23.97,1412.69,Bank Transfer,92.41,One Year
+100182,131.0,4902.97,Bank Transfer,0.0,Month-to-Month
+100183,136.41,4026.21,Bank Transfer,0.0,Month-to-Month
+100184,63.72,2312.94,UPI,15.59,Month-to-Month
+100185,53.73,950.85,Credit Card,82.88,Month-to-Month
+100186,81.2,1834.58,Bank Transfer,101.04,One Year
+100187,132.63,5056.65,Credit Card,0.0,Two Year
+100188,61.13,1632.51,Debit Card,0.0,One Year
+100189,75.77,1283.57,Bank Transfer,122.03,Month-to-Month
+100190,33.35,967.82,Credit Card,35.06,Month-to-Month
+100191,49.16,1178.5,Credit Card,0.0,Month-to-Month
+100192,128.7,810.55,Debit Card,0.0,Month-to-Month
+100193,86.51,3051.39,Credit Card,54.41,Month-to-Month
+100194,50.49,3487.34,Credit Card,50.35,Month-to-Month
+100195,133.64,4614.21,UPI,0.0,Month-to-Month
+100196,125.95,7115.72,Debit Card,14.6,Month-to-Month
+100197,69.37,4272.66,Bank Transfer,59.12,Month-to-Month
+100198,88.0,216.12,Bank Transfer,0.0,Month-to-Month
+100199,61.68,3913.7,Bank Transfer,26.69,Month-to-Month
