@@ -1,7 +1,7 @@
 # Enterprise AI/ML Observability Architecture & Implementation Report: AWS Multi-Account Platform
 
 > **Skill Location**: [`.agents/skills/ai-ml-observability-architect/SKILL.md`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/.agents/skills/ai-ml-observability-architect/SKILL.md)  
-> **Requirements Spec**: [`observability-requirements-spec.md`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/observability-governance/lab-observability-aws/observability-requirements-spec.md)  
+> **Requirements Spec**: [`observability-requirements-spec.md`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/lab6-observability-governance/lab6.1-observability-aws/observability-requirements-spec.md)  
 
 ---
 

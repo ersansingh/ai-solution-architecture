@@ -337,7 +337,7 @@ Compliance with Fed SR 11-7 and EU AI Act Title III: Automated continuous evalua
 ## 8. Draw.io Multi-Page XML File
 
 The multi-page Draw.io diagram for this architecture is stored in:
-- [`designs/multi-region-banking-ai-platform/multi_region_banking_ai.drawio`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/designs/multi-region-banking-ai-platform/multi_region_banking_ai.drawio)
+- [`lab2-ai-system-designs/lab2.6-multi-region-banking-ai-platform/multi_region_banking_ai.drawio`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/lab2-ai-system-designs/lab2.6-multi-region-banking-ai-platform/multi_region_banking_ai.drawio)
 
 *(Contains importable `mxGraphModel` pages for all 10 architecture views).*
 

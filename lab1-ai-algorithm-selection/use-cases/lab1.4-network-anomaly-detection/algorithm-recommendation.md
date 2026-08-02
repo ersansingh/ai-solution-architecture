@@ -1,7 +1,7 @@
 # AI Algorithm & Model Recommendation Report: Enterprise Network Intrusion & Zero-Day Anomaly Detection
 
 > **Paradigm**: Unsupervised Learning (Anomaly Detection / Representation Learning)  
-> **Problem Statement**: [`network-anomaly-detection.md`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/ai-algorithm-selection/use-cases/network-anomaly-detection/network-anomaly-detection.md)  
+> **Problem Statement**: [`network-anomaly-detection.md`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/lab1-ai-algorithm-selection/use-cases/lab1.4-network-anomaly-detection/network-anomaly-detection.md)  
 > **Target Environment**: Apache Kafka + Apache Flink + Feast (Redis) + C++ Triton ONNX Runtime + Prometheus/Grafana  
 
 ---

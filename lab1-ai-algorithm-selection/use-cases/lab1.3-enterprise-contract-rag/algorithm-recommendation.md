@@ -1,7 +1,7 @@
 # AI Algorithm & Model Recommendation Report: Enterprise Contract Analysis RAG
 
 > **Paradigm**: Generative AI & Large Language Models (Advanced RAG / SLMs / LLMs)  
-> **Problem Statement**: `ai-algorithm-selection/use-cases/enterprise-contract-rag/enterprise-contract-rag.md`
+> **Problem Statement**: `lab1-ai-algorithm-selection/use-cases/lab1.3-enterprise-contract-rag/enterprise-contract-rag.md`
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **Document Type**: Requirements Specification Aligned to `observability-requirements-template.md`  
 > **Skill Ref**: [`.agents/skills/ai-ml-observability-architect/SKILL.md`](.agents/skills/ai-ml-observability-architect/SKILL.md)  
-> **Source Baseline**: [`observability-requirement.md`](observability-governance/lab-observability-aws/observability-requirement.md)  
+> **Source Baseline**: [`observability-requirement.md`](lab6-observability-governance/lab6.1-observability-aws/observability-requirement.md)  
 
 ---
 

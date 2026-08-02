@@ -1,7 +1,7 @@
 # AI Algorithm & Model Recommendation Report: High-Speed Industrial Defect Detection
 
 > **Paradigm**: Deep Learning (Computer Vision / Real-Time Detection)  
-> **Problem Statement**: `ai-algorithm-selection/use-cases/industrial-defect-detection/industrial-defect-detection.md`
+> **Problem Statement**: `lab1-ai-algorithm-selection/use-cases/lab1.5-industrial-defect-detection/industrial-defect-detection.md`
 
 ---
 

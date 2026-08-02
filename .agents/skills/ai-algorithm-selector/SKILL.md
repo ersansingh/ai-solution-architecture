@@ -402,7 +402,7 @@ Use the appropriate paradigm template from `templates/`:
 When referencing files within this repository, use the following relative path structures:
 
 - **Skill Instructions**: `.agents/skills/ai-algorithm-selector/SKILL.md`
-- **Master Problem Template**: `.agents/skills/ai-algorithm-selector/templates/problem-statement-template.md` (or `ai-algorithm-selection/templates/problem-statement-template.md`)
+- **Master Problem Template**: `.agents/skills/ai-algorithm-selector/templates/problem-statement-template.md` (or `lab1-ai-algorithm-selection/templates/problem-statement-template.md`)
 - **Supervised Template**: `.agents/skills/ai-algorithm-selector/templates/problem-statement-supervised.md`
 - **Unsupervised Template**: `.agents/skills/ai-algorithm-selector/templates/problem-statement-unsupervised.md`
 - **Reinforcement Learning Template**: `.agents/skills/ai-algorithm-selector/templates/problem-statement-reinforcement-learning.md`
@@ -410,11 +410,11 @@ When referencing files within this repository, use the following relative path s
 - **Generative AI Template**: `.agents/skills/ai-algorithm-selector/templates/problem-statement-generative-ai.md`
 - **Recommendation Report Template**: `.agents/skills/ai-algorithm-selector/templates/algorithm-recommendation-template.md`
 - **Taxonomy Reference Matrix**: `.agents/skills/ai-algorithm-selector/references/algorithm-taxonomy-and-selection-matrix.md`
-- **Supervised Learning Use Case**: `ai-algorithm-selection/use-cases/customer-churn-prediction/customer-churn-prediction.md` | `ai-algorithm-selection/use-cases/customer-churn-prediction/algorithm-recommendation.md`
-- **Unsupervised Learning Use Case**: `ai-algorithm-selection/use-cases/network-anomaly-detection/network-anomaly-detection.md` | `ai-algorithm-selection/use-cases/network-anomaly-detection/algorithm-recommendation.md`
-- **Deep Learning Use Case**: `ai-algorithm-selection/use-cases/industrial-defect-detection/industrial-defect-detection.md` | `ai-algorithm-selection/use-cases/industrial-defect-detection/algorithm-recommendation.md`
-- **Generative AI & LLM Use Case**: `ai-algorithm-selection/use-cases/enterprise-contract-rag/enterprise-contract-rag.md` | `ai-algorithm-selection/use-cases/enterprise-contract-rag/algorithm-recommendation.md`
-- **Reinforcement Learning Use Case**: `ai-algorithm-selection/use-cases/dynamic-pricing-engine/dynamic-pricing-engine.md` | `ai-algorithm-selection/use-cases/dynamic-pricing-engine/algorithm-recommendation.md`
+- **Supervised Learning Use Case**: `lab1-ai-algorithm-selection/use-cases/lab1.1-customer-churn-prediction/customer-churn-prediction.md` | `lab1-ai-algorithm-selection/use-cases/lab1.1-customer-churn-prediction/algorithm-recommendation.md`
+- **Unsupervised Learning Use Case**: `lab1-ai-algorithm-selection/use-cases/lab1.4-network-anomaly-detection/network-anomaly-detection.md` | `lab1-ai-algorithm-selection/use-cases/lab1.4-network-anomaly-detection/algorithm-recommendation.md`
+- **Deep Learning Use Case**: `lab1-ai-algorithm-selection/use-cases/lab1.5-industrial-defect-detection/industrial-defect-detection.md` | `lab1-ai-algorithm-selection/use-cases/lab1.5-industrial-defect-detection/algorithm-recommendation.md`
+- **Generative AI & LLM Use Case**: `lab1-ai-algorithm-selection/use-cases/lab1.3-enterprise-contract-rag/enterprise-contract-rag.md` | `lab1-ai-algorithm-selection/use-cases/lab1.3-enterprise-contract-rag/algorithm-recommendation.md`
+- **Reinforcement Learning Use Case**: `lab1-ai-algorithm-selection/use-cases/lab1.2-dynamic-pricing-engine/dynamic-pricing-engine.md` | `lab1-ai-algorithm-selection/use-cases/lab1.2-dynamic-pricing-engine/algorithm-recommendation.md`
 
 ---
 
@@ -440,4 +440,4 @@ When invoked:
    - Include explicit confidence level with reasoning.
 
 4. **Review & Save**:
-   - Deliver the report and save it to `ai-algorithm-selection/use-cases/<use-case-name>/algorithm-recommendation.md` or as designated.
+   - Deliver the report and save it to `lab1-ai-algorithm-selection/use-cases/<lab-folder>/algorithm-recommendation.md` or as designated.

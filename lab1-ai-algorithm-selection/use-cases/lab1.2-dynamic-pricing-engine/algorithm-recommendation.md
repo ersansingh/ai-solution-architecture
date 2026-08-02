@@ -1,7 +1,7 @@
 # AI Algorithm & Model Recommendation Report: Enterprise Dynamic Pricing Engine
 
 > **Paradigm**: Reinforcement Learning (Contextual Bandits / Offline RL)  
-> **Problem Statement**: `ai-algorithm-selection/use-cases/dynamic-pricing-engine/dynamic-pricing-engine.md`
+> **Problem Statement**: `lab1-ai-algorithm-selection/use-cases/lab1.2-dynamic-pricing-engine/dynamic-pricing-engine.md`
 
 ---
 
