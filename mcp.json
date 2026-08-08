@@ -18,6 +18,26 @@
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
+    },
+    "atlassian": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-atlassian"
+      ],
+      "env": {
+        "ATLASSIAN_EMAIL": "${env:ATLASSIAN_EMAIL}",
+        "ATLASSIAN_API_TOKEN": "${env:ATLASSIAN_API_TOKEN}",
+        "ATLASSIAN_BASE_URL": "${env:ATLASSIAN_BASE_URL}"
+      }
+    },
+    "google-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-google-search"
+      ],
+      "env": {}
     }
   }
 }

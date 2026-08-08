@@ -1,0 +1,26 @@
+{
+  "skill_name": "ai-business-strategy-roadmap",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "fintech-fraud-detection-strategy",
+      "prompt": "Our mid-sized fintech platform is experiencing $2.5M in annual fraud losses and high manual review costs ($500k/year for 15 analysts). We want an AI-powered real-time transaction risk scoring system. Create an enterprise AI business strategy, risk-adjusted financial model, feasibility assessment, risk matrix, stage-gate funding plan, and project roadmap.",
+      "expected_output": "Executive Decision Card with r-ROI and EMV, 4-pillar feasibility matrix (Tech/Data/Ops/Reg), 12-month Capex/Opex TCO model, 4 stage-gate tranches with kill-switch criteria, risk mitigation matrix, 4-phase project roadmap across 5 workstreams, and KPI dashboard.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "eval_name": "healthcare-prior-authorization-rag",
+      "prompt": "A regional hospital network wants to build a RAG-based AI copilot to automate medical prior authorization document processing. Currently, staff process 50,000 requests/year manually with a 3-day turnaround time. Develop a complete AI investment proposal, feasibility analysis, risk-adjusted financial model, and implementation roadmap.",
+      "expected_output": "Comprehensive 6-step business strategy featuring HIPAA/EU AI Act regulatory scoring, risk-adjusted financial metrics (r-ROI, EMV), Stage-Gate funding breakdown, clinical risk mitigations, phased execution roadmap, and STP/latency KPI targets.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "eval_name": "ecommerce-customer-service-agent",
+      "prompt": "An e-commerce retailer receives 200,000 customer support tickets per month. They want to deploy autonomous AI agents to handle order tracking, returns, and simple inquiries. Formulate a 6-step AI business strategy and funding roadmap with detailed financial modeling.",
+      "expected_output": "6-step AI strategy document with Executive Decision Card, Feasibility Scoring (Tech, Data, Ops, Compliance), 12-Month Financial Model (r-ROI, EMV, TCO), Stage-Gate Capital Release Schedule, Risk Profile, Phased Roadmap Matrix, and CSAT/STP KPI Governance.",
+      "files": []
+    }
+  ]
+}
