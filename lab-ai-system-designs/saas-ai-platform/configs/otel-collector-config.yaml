@@ -1,0 +1,93 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'dcgm-gpu-metrics'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:9400']
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+
+  resourcedetection:
+    detectors: [env, system, eks, gcp, azure]
+    timeout: 2s
+    override: false
+
+  transform/pii_scrubbing:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - replace_pattern(body, "(?i)\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b", "[EMAIL_REDACTED]")
+          - replace_pattern(body, "\\b(?:\\d[ -]*?){13,16}\\b", "[CARD_REDACTED]")
+
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 10000
+    expected_new_traces_per_sec: 2000
+    policies:
+      [
+        {
+          name: errors-policy,
+          type: status_code,
+          status_code: { status_codes: [ERROR] }
+        },
+        {
+          name: high-latency-policy,
+          type: numeric_attribute,
+          numeric_attribute: { key: "gen_ai.client.ttft", value_condition: { greater_than_or_equal: 150 } }
+        },
+        {
+          name: probabilistic-sample,
+          type: probabilistic,
+          probabilistic: { sampling_percentage: 5.0 }
+        }
+      ]
+
+  batch:
+    send_batch_size: 8192
+    timeout: 200ms
+
+exporters:
+  # Observe Inc. Exporter for Unified Logs and Distributed Traces
+  otlphttp/observe:
+    endpoint: "https://${OBSERVE_CUSTOMER_ID}.collect.observeinc.com/v1/otel"
+    headers:
+      Authorization: "Bearer ${OBSERVE_COLLECTOR_TOKEN}"
+
+  # Obstack / Prometheus Remote-Write Exporter for High-Cardinality Metrics
+  prometheusremotewrite/obstack:
+    endpoint: "https://obstack-metrics.internal.saas-ai.net/api/v1/write"
+    headers:
+      X-Scope-OrgID: "enterprise-saas"
+
+  # Cloud-Native Fallback Exporter (AWS CloudWatch / Audit Compliance)
+  awscloudwatchlogs:
+    log_group_name: "/saas-ai-platform/audit-logs"
+    region: "us-east-1"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, tail_sampling, batch]
+      exporters: [otlphttp/observe]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, transform/pii_scrubbing, batch]
+      exporters: [otlphttp/observe, awscloudwatchlogs]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [prometheusremotewrite/obstack]

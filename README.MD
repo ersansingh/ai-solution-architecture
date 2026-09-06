@@ -26,6 +26,14 @@ Comprehensive enterprise architecture specs detailing the **10 Crucial Enterpris
 
 ---
 
+### 📈 [Lab 4: Enterprise AI Business Strategy & Roadmaps](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/lab-ai-business-strategy/)
+Executive-ready AI business cases, multi-factor feasibility scoring, risk-adjusted financial models (r-ROI, EMV), target operating models (TOM), capability maturity assessments (ACMA), model risk management (MRM), and transformation roadmaps.
+* **Lab 4.1**: [Automated Insurance Claims Processing](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/lab-ai-business-strategy/use-cases/use-case-1-claims-processing/)
+* **Lab 4.2**: [Customer Support Co-Pilot & STP Engine](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/lab-ai-business-strategy/use-cases/use-case-2-customer-support-copilot/)
+* **Lab 4.3**: [Enterprise AI Transformation & Governance (Aegis Global Insurance)](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/lab-ai-business-strategy/use-cases/use-case-3-enterprise-insurance-transformation/)
+
+---
+
 ### ⚙️ [Lab 5: Model Training, Serving & MLOps Automation](ai-solution-architecture/lab5-model-training-serving/)
 Full lifecycle MLOps implementation built on AWS SageMaker:
 * **Lab 5.1**: [SageMaker Customer Churn Pipeline](ai-solution-architecture/lab5-model-training-serving/lab5.1-aws-sagemaker/) featuring an 11-phase implementation guide, training data samples, hyperparameter tuning, model registry, container deployment, and automated retraining pipelines.
@@ -48,9 +56,11 @@ Production-grade telemetry framework integrating the AWS Ecosystem, OpenTelemetr
 
 This repository exposes specialized AI skills for AI coding assistants (Gemini CLI, Antigravity IDE, Cursor, Claude):
 
-1. **`ai-algorithm-selector`** ([`SKILL.md`](ai-solution-architecture/.agents/skills/ai-algorithm-selector/SKILL.md)): Analyzes problem statements and outputs standard 15-section algorithm recommendation reports.
-2. **`ai-system-design-architect`** ([`SKILL.md`](ai-solution-architecture/.agents/skills/ai-system-design-architect/SKILL.md)): Generates complete 10-view enterprise system designs, Terraform IaC, CI/CD YAML, and multi-page `.drawio` XML files.
-3. **`ai-ml-observability-architect`** ([`SKILL.md`](ai-solution-architecture/.agents/skills/ai-ml-observability-architect/SKILL.md)): Generates multi-cloud OTel Gateway configurations, Observe Inc. OPAL queries, Prometheus alert rules, Grafana dashboards, and Step Functions remediation workflows.
+1. **`ai-algorithm-selector`** ([`SKILL.md`](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/.agents/skills/ai-algorithm-selector/SKILL.md)): Analyzes problem statements and outputs standard 15-section algorithm recommendation reports.
+2. **`ai-system-design-architect`** ([`SKILL.md`](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/.agents/skills/ai-system-design-architect/SKILL.md)): Generates complete 10-view enterprise system designs, Terraform IaC, CI/CD YAML, and multi-page `.drawio` XML files.
+3. **`ai-business-strategy-roadmap`** ([`SKILL.md`](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/.agents/skills/ai-business-strategy-roadmap/SKILL.md)): Generates quantitative AI business cases, multi-factor feasibility, risk-adjusted ROI (r-ROI, EMV), and stage-gate funding roadmaps.
+4. **`ai-strategy-transformation-governance`** ([`SKILL.md`](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/.agents/skills/ai-strategy-transformation-governance/SKILL.md)): Guides enterprise Target Operating Models (TOM), AI Capability Maturity Assessments (ACMA), EU AI Act / NAIC Model Risk Management (MRM), ADKAR change management, and 36-month multi-horizon adoption roadmaps.
+5. **`ai-ml-observability-architect`** ([`SKILL.md`](file:///c:/Users/dell/IdeaProjects/ai-solution-architecture/.agents/skills/ai-ml-observability-architect/SKILL.md)): Generates multi-cloud OTel Gateway configurations, Observe Inc. OPAL queries, Prometheus alert rules, Grafana dashboards, and Step Functions remediation workflows.
 
 ---
 
