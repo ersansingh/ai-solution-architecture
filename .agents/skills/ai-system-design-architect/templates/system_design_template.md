@@ -69,39 +69,71 @@ Step-by-step sequential sequence of events:
 
 ### 1. Logical Architecture View
 Component interaction breakdown showing data processing and inference paths.
+**Layout**: Layered columns (6+ color-coded containers), actors on edge, emoji service cards, header badges. 25+ components.
 
 ### 2. Infrastructure Architecture View
 Topology diagram detailing Cloud Region, AZs, VPC/VNet, Public/Private Subnets, K8s Node Groups, and Storage.
+**Layout**: Nested Cloud > Region > VPC > AZ > Subnet hierarchy with native cloud provider icons (AWS `mxgraph.aws4.resourceIcon`, Azure `img/lib/azure2/`, GCP `img/lib/google/`). Color-coded subnets (green=public, yellow=private, red=database).
 
 ### 3. Security Architecture View
 Perimeter WAF, Auth flow, KMS encryption, Private subnets, mTLS, and AI Safety Guardrails.
+**Layout**: 4-quadrant (IAM, Policy/Compliance, Monitoring/Audit, Threat Detection) with Governance Dashboard bar. Legend box.
 
 ### 4. Observability, Logging & Monitoring View
 OpenTelemetry tracing, Prometheus metrics, ELK log aggregation, token usage, and hallucination tracking.
+**Layout**: 4 horizontal rows (Collection, Visualization, Alerting, Operations), 4-6 components per row.
 
 ### 5. MLOps / LLMOps CI/CD Pipeline View
 Source Control -> Automated Build -> Benchmark Evaluation -> Model Registry -> Canary K8s Deployment.
+**Layout**: Left-to-right 6-stage pipeline with dashed feedback loop from Monitoring back to Source Control. Data Pipeline sub-section at bottom.
 
 ### 6. Data Lineage & Privacy Governance View
 Presidio PII redaction, Row-Level Vector Tenant Isolation, and GDPR/EU AI Act data lineage tracking.
+**Layout**: Top-to-bottom lineage flow with tenant isolation boundaries and audit trail sidebar.
 
 ### 7. Resilience, HA & Multi-Provider Fallback View
 Multi-region failover, circuit breakers, and fallback routing (Primary LLM -> Secondary LLM -> Local SLM).
+**Layout**: Multi-region diagram with active-active/passive failover paths and labeled fallback edges.
 
 ### 8. Multi-Agent Orchestration & Tool Execution View
 Supervisor Agent -> Worker Agents (Search, Code, SQL) -> Execution Sandboxes -> Memory persistence.
+**Layout**: Hierarchical agent tree with tool connections and memory store cylinders.
 
 ### 9. FinOps & Semantic Cache Cost Optimization View
 Redis Semantic Cache, Model Cascading (routing simple queries to 8B SLM, complex queries to 70B+ LLM), and Token Budget Quotas.
+**Layout**: Decision flow showing query routing paths with cost annotations on edges.
 
 ### 10. AI Model Governance, Safety & HITL Evaluation View
 Automated Ragas/TruLens evaluation, Human-in-the-loop (HITL) review gates, and Model Registry staging gates.
+**Layout**: Pipeline with decision diamond gates, HITL review queue, and Model Registry stage transitions (Experimental > Staging > Candidate > Production).
 
 ---
 
 ## 8. Draw.io Multi-Page XML File
-Reference or embedded importable `.drawio` XML file containing pages for all 10 views:
-- [`templates/ai_rag_pipeline.drawio`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/templates/ai_rag_pipeline.drawio)
+
+Generate a complete, valid, importable `.drawio` XML file containing **all 10 architecture view pages**. The XML must meet these mandatory quality requirements:
+
+- **10 pages** (one per architecture view listed in Section 7 above).
+- **15+ meaningful components per page** -- never skeleton placeholders.
+- **Native cloud provider icons** on Infrastructure pages (`mxgraph.aws4.resourceIcon` for AWS, `img/lib/azure2/` for Azure, `img/lib/google/` for GCP).
+- **`shape=cylinder3`** for all databases and storage components.
+- **`shadow=1`** on all inner service cards.
+- **Container recipe**: outer rect + colored header badge + inner cards (see drawio_xml_spec.md Section 7).
+- **Labeled edges**: all major connections have `edgeLabel` child cells with descriptive flow labels.
+- **AWS group shapes** for Cloud/VPC/Subnet boundaries on Infrastructure pages (see drawio_xml_spec.md Section 3).
+- **Container nesting** with `parent` attribute hierarchy (see drawio_xml_spec.md Section 4).
+- **Emoji prefixes** in service card labels for visual scanning.
+
+**Draw.io MCP workflow** (mandatory):
+1. Use `search_shapes("aws <service>")` to get exact icon style strings before writing XML.
+2. Write the `.drawio` file to disk.
+3. Use `open_drawio_xml(content, routing="libavoid")` to preview and auto-route edges.
+4. Use `get_page`/`set_page` to fix any page-level issues (overlaps, missing components).
+5. Final validation: `open_drawio_xml(content, lightbox=true)` to confirm all 10 pages render.
+
+Refer to:
+- [Draw.io XML Specification](file:///.agents/skills/ai-system-design-architect/references/drawio_xml_spec.md) for XML syntax, icon catalogs, and shape patterns.
+- [Visual Quality Standards](file:///.agents/skills/ai-system-design-architect/references/visual_quality_standards.md) for color palettes and per-view layout specs.
 
 ---
 

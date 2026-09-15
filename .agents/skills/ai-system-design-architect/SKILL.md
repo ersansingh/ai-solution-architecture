@@ -135,27 +135,142 @@ Organize all system components into 8 standard enterprise architecture layers:
 
 ---
 
-# Diagram Layout Engine & Visual Standards
+# Draw.io Visual Quality Standards
 
-Follow strict grid layout rules for all generated diagrams:
+All generated Draw.io diagrams must meet enterprise presentation quality. Follow these mandatory rules:
 
-### Grid & Canvas Specs
-- **Canvas Size**: Width `1600px`, Height `1000px`.
-- **Horizontal Spacing**: `180px`.
-- **Vertical Spacing**: `120px`.
-- **Layout Flow**: Top-to-Bottom layer stacking, Left-to-Right data flow.
+### Mandatory Visual Patterns for Every Diagram Page
+1. **Container Recipe**: Every architectural group uses an outer rounded rect (`strokeWidth=2;arcSize=8`) containing a colored header badge (`fillColor=#COLOR;strokeColor=none;fontColor=#ffffff;rounded=1;arcSize=20`) and inner service cards (`fillColor=#ffffff;strokeColor=#COLOR;strokeWidth=1;arcSize=12;shadow=1`).
+2. **Shadow on Cards**: All inner service/component cards must have `shadow=1`.
+3. **Databases = Cylinders**: All database and storage components must use `shape=cylinder3` -- never plain rounded rectangles.
+4. **Labeled Edges**: All edges between major components must have descriptive `edgeLabel` child cells (e.g., "REST/gRPC", "Stream & Batch", "VPN / ExpressRoute"). Use `connectable="0"` pattern.
+5. **Emoji Labels**: Use emoji prefixes in service card values for quick visual scanning (e.g., "🧠 Fraud Detection", "🔐 Authentication", "📊 Risk Dashboard").
+6. **Color-Coded Layers**: Each architectural layer gets a distinct color family (see [Visual Quality Standards](file:///.agents/skills/ai-system-design-architect/references/visual_quality_standards.md) for the full palette).
+7. **Page Titles**: Every page must have a bold title text cell (`fontSize=24;fontStyle=1`).
+8. **Minimum Density**: Each diagram page must contain 15+ meaningful components -- never skeleton placeholders.
 
-### Shape Standards
-- **Actors/Users**: `shape=umlActor`
-- **Services/Containers**: `rounded=1;whiteSpace=wrap;html=1;`
-- **Databases/Stores**: `shape=cylinder;whiteSpace=wrap;html=1;`
-- **Message Queues**: `shape=mxgraph.messaging.queue` or `rounded=1`
-- **Cloud Boundaries**: `shape=cloud` or `swimlane;rounded=1;`
+### Native Cloud Icon Rule
+When the target cloud is AWS, Azure, or GCP, **always** use native provider icon shapes:
+- **AWS**: `shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.<service>` with provider-correct `fillColor`.
+- **Azure**: `image=img/lib/azure2/<category>/<Service>.svg` with `aspect=fixed`.
+- **GCP**: `image=img/lib/google/<category>/<Service>.svg` with `aspect=fixed`.
+- **Never** use generic rounded rectangles for cloud services on Infrastructure view pages.
 
-### Multi-Cloud Icon Mappings
-- **AWS**: `mxgraph.aws4.group`, `mxgraph.aws4.vpc`, `mxgraph.aws4.eks`, `mxgraph.aws4.ec2`, `mxgraph.aws4.s3`, `mxgraph.aws4.rds`, `mxgraph.aws4.lambda`, `mxgraph.aws4.api_gateway`, `mxgraph.aws4.sagemaker`.
-- **Azure**: `mxgraph.azure.cloud`, `mxgraph.azure.virtual_network`, `mxgraph.azure.kubernetes_service`, `mxgraph.azure.storage_accounts`, `mxgraph.azure.machine_learning`, `mxgraph.azure.api_management`.
-- **GCP**: `mxgraph.gcp2.group`, `mxgraph.gcp2.kubernetes_engine`, `mxgraph.gcp2.bigquery`, `mxgraph.gcp2.cloud_storage`, `mxgraph.gcp2.pubsub`, `mxgraph.gcp2.ai_platform`.
+### Container Nesting Rule for Infrastructure Views
+Infrastructure diagrams **must** use AWS group shapes (`shape=mxgraph.aws4.group`) with proper `parent` hierarchy:
+- Cloud boundary → Region → VPC/VNet → Availability Zone → Subnet → Resources.
+- Resources placed inside containers use the `parent="container_id"` attribute.
+- Coordinates inside a container are **relative** to the parent's origin.
+- Subnets are color-coded: Public=green (`#E9F3E6`), Private=yellow (`#FFF2CC`), Database=red (`#FFCCCC`).
+
+---
+
+# Per-View Layout Recipe
+
+Each of the 10 architecture views must follow its specific layout pattern:
+
+| # | View | Layout Pattern | Key Requirements | Min Components |
+|---|------|---------------|-----------------|----------------|
+| 1 | Logical Architecture | Layered columns (vertical or horizontal) | Color-coded layer containers, emoji cards, header badges, actors on edge | 6 layers, 25+ |
+| 2 | Infrastructure (Multi-Cloud) | Side-by-side cloud columns | AWS/Azure/GCP group shapes, native icons, VPN/Interconnect labeled edges | 3 clouds, 6 svc each |
+| 3 | Infrastructure (Region Detail) | Nested: Cloud > Region > VPC > AZs > Subnets | All networking icons (IGW, NAT, ALB, Route Tables, SGs, NACLs, Transit GW) | 2 AZs, 3 tiers |
+| 4 | Data Architecture | Left-to-right pipeline | Sources > Ingestion > Lake (Bronze/Silver/Gold cylinders) > Processing > Warehouse > Consumption | 6 stages, 15+ |
+| 5 | MLOps CI/CD | Left-to-right pipeline + feedback loop | Source > CI/CD > Training > Registry > Deploy > Monitor. Dashed retrain loop. | 6 stages + loop |
+| 6 | Model Serving | Left-to-right detail | Client > Gateway > LB > KServe (Transformer/Predictor/Explainer) > Stores | 10+ |
+| 7 | Security & Governance | 4-quadrant + governance bar | TL:IAM, TR:Policy, BL:Audit, BR:Threat. Dashboard bar. Legend box. | 4 quads, 20+ |
+| 8 | Monitoring & Operations | 4 horizontal rows | Collection > Visualization > Alerting > Operations. 4-6 items per row. | 4 layers, 20+ |
+| 9 | Data Governance & Privacy | Top-to-bottom lineage flow | PII detection, masking, tenant isolation, audit trails, lineage tracking | 12+ |
+| 10 | AI Safety & HITL | Pipeline with decision gates | Evaluation > Decision diamonds > HITL queue > Registry stage gates | 10+ with diamonds |
+
+Refer to [Visual Quality Standards](file:///.agents/skills/ai-system-design-architect/references/visual_quality_standards.md) for detailed per-view spatial layout specifications and coordinate guidance.
+
+---
+
+# Draw.io MCP Server Integration
+
+The draw.io MCP server (`@drawio/mcp`) is available in this environment. **Use it actively during diagram creation**, not just as a post-generation validation step. The MCP server provides these tools:
+
+| MCP Tool | Purpose | Key Parameters |
+|----------|---------|----------------|
+| `search_shapes` | Search ~10,000 draw.io shapes (AWS, Azure, GCP, Cisco, K8s, UML, BPMN) by keyword. Returns **exact style strings** for use in XML. | `query` (string, e.g. "aws lambda"), `limit` (number, default 10, max 50) |
+| `open_drawio_xml` | Opens the draw.io editor with XML content for visual preview and editing. | `content` (XML string), `lightbox` (bool), `dark` ("auto"/"true"/"false"), `routing` ("libavoid" for auto-rerouting) |
+| `open_drawio_csv` | Opens draw.io with CSV data converted to a diagram (useful for org charts, tables). | `content` (CSV string), `lightbox` (bool) |
+| `open_drawio_mermaid` | Opens draw.io with Mermaid.js syntax converted to editable diagram. | `content` (Mermaid string), `lightbox` (bool) |
+| `list_pages` | List all pages in an existing `.drawio` file. | `path` (file path ending in `.drawio`) |
+| `get_page` | Read a specific page's `mxGraphModel` XML from a `.drawio` file. | `path`, `page` (index or name) |
+| `set_page` | Replace a page's content in an existing `.drawio` file. | `path`, `page`, `content` (mxGraphModel XML) |
+
+### Workflow: Using MCP Tools During Diagram Design
+
+Follow this sequence when generating architecture diagrams:
+
+**Step 1: Search for Correct Shape Styles**
+Before writing XML for cloud services, **use `search_shapes`** to get the exact style strings:
+```
+search_shapes("aws eks")         → returns exact mxgraph.aws4 style for EKS
+search_shapes("azure kubernetes") → returns exact img/lib/azure2/ style for AKS
+search_shapes("gcp bigquery")    → returns exact img/lib/google/ style for BigQuery
+search_shapes("database cylinder") → returns cylinder3 style strings
+search_shapes("kubernetes pod")  → returns K8s shape styles
+```
+This ensures icon accuracy -- always prefer MCP-returned styles over manually constructed ones when available.
+
+**Step 2: Generate the Multi-Page `.drawio` XML**
+Write the complete multi-page XML file to disk (e.g., `<project>/architecture.drawio`) following the XML spec and quality standards. Use the style strings returned by `search_shapes` in Step 1.
+
+**Step 3: Preview Each Page with `open_drawio_xml`**
+After writing the file, open it for visual preview:
+```
+open_drawio_xml(content=<full XML>, routing="libavoid")
+```
+- Use `routing="libavoid"` to automatically reroute connectors around shapes (cleans up edge crossings).
+- Review each page visually for overlapping elements, misaligned containers, and missing labels.
+
+**Step 4: Iterate Page-by-Page with `get_page` / `set_page`**
+If a specific page needs fixes:
+1. `list_pages(path="architecture.drawio")` — see all pages and their indices.
+2. `get_page(path="architecture.drawio", page=<index>)` — read the current XML of that page.
+3. Fix issues (adjust coordinates, add missing components, fix edge references).
+4. `set_page(path="architecture.drawio", page=<index>, content=<fixed mxGraphModel XML>)` — write the corrected page back.
+5. `open_drawio_xml(content=<updated page XML>)` — preview the fix.
+
+**Step 5: Final Validation Preview**
+Open the complete file one last time with `open_drawio_xml` in lightbox mode to confirm all pages render correctly:
+```
+open_drawio_xml(content=<final XML>, lightbox=true)
+```
+
+### When to Use Each Tool
+
+| Situation | Tool to Use |
+|-----------|-------------|
+| Need the correct style for a cloud service icon | `search_shapes("aws <service>")` |
+| Need a shape you haven't used before (BPMN, P&ID, Cisco, etc.) | `search_shapes("<keyword>")` |
+| Preview the full diagram after generating XML | `open_drawio_xml(content, routing="libavoid")` |
+| Fix a single page without regenerating the entire file | `get_page` → edit → `set_page` |
+| Verify page count and structure of existing file | `list_pages(path)` |
+| Quick diagram from tabular data (org chart, component list) | `open_drawio_csv(content)` |
+| Convert a Mermaid sketch to editable draw.io | `open_drawio_mermaid(content)` |
+
+---
+
+# Pre-Output Quality Checklist
+
+Before delivering the final `.drawio` XML, verify **every** item:
+
+- [ ] Every page has a bold title text cell (`fontSize=24;fontStyle=1`)
+- [ ] All database/storage components use `shape=cylinder3`
+- [ ] All containers have colored header badge cells (white text on colored background)
+- [ ] All inner service cards have `shadow=1`
+- [ ] Infrastructure pages use native cloud provider icons (not generic rectangles)
+- [ ] Infrastructure pages use AWS group shapes for Cloud/VPC/Subnet boundaries
+- [ ] All major edges have descriptive `edgeLabel` child cells
+- [ ] No two cells on the same page share the same `id`
+- [ ] All edge `source`/`target` IDs reference existing cells on that page
+- [ ] All cells with `parent` attributes reference a valid container cell on that page
+- [ ] Canvas dimensions match the view type (850x1100 dense, 1600x1000+ wide)
+- [ ] Each page contains 15+ meaningful components (not placeholders)
+- [ ] XML is well-formed (all tags closed, special chars escaped as `&amp;` `&lt;` `&gt;`)
 
 ---
 
@@ -170,7 +285,7 @@ Every architecture response **must** follow this exact 12-section structure:
 5. **Architecture Components**: Detailed inventory grouped by the 8 Enterprise Layers.
 6. **Interaction Flow**: Step-by-step sequential flow of data and requests.
 7. **Architecture Diagrams**: Textual representation & C4 diagram breakdowns.
-8. **Draw.io XML File**: Complete, valid, importable multi-page `.drawio` XML containing pages for Logical, Infrastructure, Security, Observability, CI/CD, Data Governance, Resilience Fallback, Multi-Agent, FinOps Caching, and Model Governance HITL views.
+8. **Draw.io XML File**: Complete, valid, importable multi-page `.drawio` XML containing 10 pages for all architecture views. Must pass the Pre-Output Quality Checklist above. **Use draw.io MCP tools throughout**: `search_shapes` for icon styles, `open_drawio_xml` for preview, `get_page`/`set_page` for page-level fixes, and final `lightbox=true` validation.
 9. **Infrastructure Architecture**: Topology specifications for VPCs, Subnets, Compute, Storage, and Networking.
 10. **Terraform Infrastructure**: Complete, executable Terraform code (`main.tf`, `variables.tf`, `outputs.tf`).
 11. **CI/CD Pipeline**: Executable pipeline workflow file (GitHub Actions YAML / GitLab CI).
@@ -180,5 +295,6 @@ Every architecture response **must** follow this exact 12-section structure:
 
 # Supporting References & Examples
 
-- Refer to [Draw.io XML Specification](file:///.agents/skills/ai-system-design-architect/references/drawio_xml_spec.md) for XML generation rules.
-- Refer to [Enterprise RAG Example](file:///.agents/skills/ai-system-design-architect/examples/enterprise_rag_system_design.md) for a sample response layout.
+- Refer to [Draw.io XML Specification](file:///.agents/skills/ai-system-design-architect/references/drawio_xml_spec.md) for XML generation rules, native cloud icon catalog, AWS group shapes, container nesting, edge labels, and specialized shapes.
+- Refer to [Visual Quality Standards](file:///.agents/skills/ai-system-design-architect/references/visual_quality_standards.md) for color palettes by layer, cloud provider brand colors, and per-view layout specifications.
+- Refer to [Enterprise RAG Example](file:///.agents/skills/ai-system-design-architect/examples/enterprise_rag_system_design.md) for a sample response with Draw.io XML.
