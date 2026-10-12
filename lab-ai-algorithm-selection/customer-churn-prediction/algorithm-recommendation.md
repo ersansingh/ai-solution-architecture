@@ -1,7 +1,7 @@
 # AI Algorithm & Model Recommendation Report: Enterprise Customer Churn Prediction (Global Telecommunications)
 
 > **Paradigm**: Supervised Learning (Binary Classification on Structured Tabular Data)  
-> **Problem Statement**: `lab-ai-algorithm-selection/customer-churn-prediction/customer-churn-prediction.md`  
+> **Problem Statement**: `customer-churn-prediction.md`  
 > **Skill Reference**: `.agents/skills/ai-algorithm-selector/SKILL.md`  
 > **Template**: `.agents/skills/ai-algorithm-selector/templates/algorithm-recommendation-template.md`
 

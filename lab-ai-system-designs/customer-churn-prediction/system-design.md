@@ -6,16 +6,16 @@
 **Pattern**: Predictive ML (traditional ML pattern), hybrid batch and real-time inference
 **Skill Compliance**: `ai-system-design-architect` (12-section enterprise standard)
 **Inputs**:
-- Problem statement: [`lab-ai-algorithm-selection/customer-churn-prediction/customer-churn-prediction.md`](customer-churn-prediction.md)
-- Algorithm recommendation: [`lab-ai-algorithm-selection/customer-churn-prediction/algorithm-recommendation.md`](algorithm-recommendation.md)
+- Problem statement: [`../../lab-ai-algorithm-selection/customer-churn-prediction/customer-churn-prediction.md`](../../lab-ai-algorithm-selection/customer-churn-prediction/customer-churn-prediction.md)
+- Algorithm recommendation: [`../../lab-ai-algorithm-selection/customer-churn-prediction/algorithm-recommendation.md`](../../lab-ai-algorithm-selection/customer-churn-prediction/algorithm-recommendation.md)
 
 **Companion artifacts (same folder)**:
 
 | Artifact | Repo-relative path | Covered in |
 |---|---|---|
-| 10-page Draw.io architecture file | [`lab-ai-algorithm-selection/customer-churn-prediction/churn-architecture.drawio`](churn-architecture.drawio) | Section 8 |
-| Terraform (Azure) | [`lab-ai-algorithm-selection/customer-churn-prediction/terraform/main.tf`](terraform/main.tf), [`variables.tf`](terraform/variables.tf), [`outputs.tf`](terraform/outputs.tf) | Section 10 |
-| GitHub Actions MLOps pipeline | [`lab-ai-algorithm-selection/customer-churn-prediction/pipelines/churn-mlops-pipeline.yml`](pipelines/churn-mlops-pipeline.yml) | Section 11 |
+| 10-page Draw.io architecture file | [`lab-engineering-implementation/customer-churn-prediction/churn-architecture.drawio`](churn-architecture.drawio) | Section 8 |
+| Terraform (Azure) | [`lab-engineering-implementation/customer-churn-prediction/terraform/main.tf`](terraform/main.tf), [`variables.tf`](terraform/variables.tf), [`outputs.tf`](terraform/outputs.tf) | Section 10 |
+| GitHub Actions MLOps pipeline | [`lab-engineering-implementation/customer-churn-prediction/pipelines/churn-mlops-pipeline.yml`](pipelines/churn-mlops-pipeline.yml) | Section 11 |
 
 ---
 
@@ -643,7 +643,7 @@ Pipeline with decision diamonds:
 
 The full architecture is in a separate importable file. The XML is not inlined here.
 
-**File**: [`lab-ai-algorithm-selection/customer-churn-prediction/churn-architecture.drawio`](churn-architecture.drawio). Open it at app.diagrams.net or in the draw.io desktop or VS Code extension.
+**File**: [`lab-engineering-implementation/customer-churn-prediction/churn-architecture.drawio`](churn-architecture.drawio). Open it at app.diagrams.net or in the draw.io desktop or VS Code extension.
 
 | Page | Title | Layout pattern | Key contents |
 |---|---|---|---|
@@ -723,10 +723,10 @@ The Terraform code is in separate files. It is not inlined here.
 
 | File | Repo-relative path | Contents (summary) |
 |---|---|---|
-| `main.tf` | [`lab-ai-algorithm-selection/customer-churn-prediction/terraform/main.tf`](terraform/main.tf) | Providers and backend, resource groups, networking, data, ML, serving, security and monitoring resources (see below) |
-| `variables.tf` | [`lab-ai-algorithm-selection/customer-churn-prediction/terraform/variables.tf`](terraform/variables.tf) | Region pair, environment, CIDRs, SKUs, node counts and sizes, tags, budget amount |
+| `main.tf` | [`lab-engineering-implementation/customer-churn-prediction/terraform/main.tf`](terraform/main.tf) | Providers and backend, resource groups, networking, data, ML, serving, security and monitoring resources (see below) |
+| `variables.tf` | [`lab-engineering-implementation/customer-churn-prediction/terraform/variables.tf`](terraform/variables.tf) | Region pair, environment, CIDRs, SKUs, node counts and sizes, tags, budget amount |
 | `dr.tf`, `governance.tf`, `streaming.tf` | [`terraform/dr.tf`](terraform/dr.tf), [`terraform/governance.tf`](terraform/governance.tf), [`terraform/streaming.tf`](terraform/streaming.tf) | North Europe warm standby (DR spoke, AKS, Redis geo-replica; gated by `enable_dr`), Microsoft Purview (private endpoints), Stream Analytics job (Event Hubs -> ADLS) |
-| `outputs.tf` | [`lab-ai-algorithm-selection/customer-churn-prediction/terraform/outputs.tf`](terraform/outputs.tf) | AKS name and OIDC issuer, APIM gateway URL, Redis host, ADLS endpoints, AML workspace ID, Key Vault URI, Event Hubs namespace |
+| `outputs.tf` | [`lab-engineering-implementation/customer-churn-prediction/terraform/outputs.tf`](terraform/outputs.tf) | AKS name and OIDC issuer, APIM gateway URL, Redis host, ADLS endpoints, AML workspace ID, Key Vault URI, Event Hubs namespace |
 
 **Resource coverage expected in `main.tf`, grouped by concern**:
 
@@ -747,7 +747,7 @@ The Terraform code is in separate files. It is not inlined here.
 
 The pipeline is in a separate file. It is not inlined here.
 
-**File**: [`lab-ai-algorithm-selection/customer-churn-prediction/pipelines/churn-mlops-pipeline.yml`](pipelines/churn-mlops-pipeline.yml) (GitHub Actions). Copy it to `.github/workflows/` to activate it.
+**File**: [`lab-engineering-implementation/customer-churn-prediction/pipelines/churn-mlops-pipeline.yml`](pipelines/churn-mlops-pipeline.yml) (GitHub Actions). Copy it to `.github/workflows/` to activate it.
 
 **Triggers**: `pull_request` (CI), `push` to `main` (CI plus CT), `schedule` (weekly retrain, Sunday 02:00 UTC), `workflow_dispatch` (drift-triggered retrain from an Azure Monitor action group, or manual), and path filters for `infra/**` (Terraform).
 

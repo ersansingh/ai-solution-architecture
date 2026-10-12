@@ -26,7 +26,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "lab-ai-algorithm-selection/customer-churn-prediction/**"
+      - "lab-engineering-implementation/customer-churn-prediction/**"
       - ".github/workflows/churn-mlops-pipeline.yml"
   pull_request:
     branches: [main]
@@ -57,11 +57,11 @@ permissions:
 
 defaults:
   run:
-    working-directory: lab-ai-algorithm-selection/customer-churn-prediction
+    working-directory: lab-engineering-implementation/customer-churn-prediction
 
 env:
-  APP_DIR: lab-ai-algorithm-selection/customer-churn-prediction
-  PYTHONPATH: ${{ github.workspace }}/lab-ai-algorithm-selection/customer-churn-prediction/src
+  APP_DIR: lab-engineering-implementation/customer-churn-prediction
+  PYTHONPATH: ${{ github.workspace }}/lab-engineering-implementation/customer-churn-prediction/src
   PYTHON_VERSION: "3.11"
   AZURE_RESOURCE_GROUP: rg-churn-prod-westeurope
   AML_WORKSPACE: mlw-churn-prod
@@ -72,7 +72,7 @@ env:
   KSERVE_NAMESPACE: churn-serving
   ISVC_NAME: churn-lgbm
   MODEL_NAME: churn-lightgbm
-  TF_DIR: lab-ai-algorithm-selection/customer-churn-prediction/terraform
+  TF_DIR: lab-engineering-implementation/customer-churn-prediction/terraform
   TF_VERSION: "1.9.8"
   # Lake (ADLS Gen2) account and Key Vault have random suffixes in terraform:
   # set from `terraform output -raw lake_storage_account_name` / the kv-* name.
@@ -108,13 +108,13 @@ jobs:
         with:
           filters: |
             infra:
-              - 'lab-ai-algorithm-selection/customer-churn-prediction/terraform/**'
+              - 'lab-engineering-implementation/customer-churn-prediction/terraform/**'
             ml:
-              - 'lab-ai-algorithm-selection/customer-churn-prediction/src/**'
-              - 'lab-ai-algorithm-selection/customer-churn-prediction/features/**'
-              - 'lab-ai-algorithm-selection/customer-churn-prediction/serving/**'
-              - 'lab-ai-algorithm-selection/customer-churn-prediction/pipelines/aml/**'
-              - 'lab-ai-algorithm-selection/customer-churn-prediction/data_contracts/**'
+              - 'lab-engineering-implementation/customer-churn-prediction/src/**'
+              - 'lab-engineering-implementation/customer-churn-prediction/features/**'
+              - 'lab-engineering-implementation/customer-churn-prediction/serving/**'
+              - 'lab-engineering-implementation/customer-churn-prediction/pipelines/aml/**'
+              - 'lab-engineering-implementation/customer-churn-prediction/data_contracts/**'
 
   # =========================================================================
   # 1. CONTINUOUS INTEGRATION: CODE QUALITY, DATA CONTRACTS, LEAKAGE
