@@ -1,0 +1,48 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+name: churn_prepare_data
+display_name: Feast point-in-time training set + out-of-time split
+version: "1"
+inputs:
+  snapshot_date:
+    type: string
+  history_months:
+    type: integer
+    default: 24
+  label_gap_days:
+    type: integer
+    default: 90
+  labels:
+    type: uri_folder
+    description: Gold churn_labels Delta table (pseudo_customer_id, snapshot_date, churn_90d, audit columns)
+  feast_config:
+    type: uri_file
+    description: Feast feature_store.yaml (offline store on ADLS feast-offline)
+  feature_service:
+    type: string
+    default: churn_model_v1
+outputs:
+  train_data:
+    type: uri_folder
+  valid_data:
+    type: uri_folder
+  calib_data:
+    type: uri_folder
+  test_data:
+    type: uri_folder
+code: ../src
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+  conda_file: ../environments/training-conda.yml
+command: >-
+  python prepare_data.py
+  --snapshot-date ${{inputs.snapshot_date}}
+  --history-months ${{inputs.history_months}}
+  --label-gap-days ${{inputs.label_gap_days}}
+  --labels ${{inputs.labels}}
+  --feast-config ${{inputs.feast_config}}
+  --feature-service ${{inputs.feature_service}}
+  --train-data ${{outputs.train_data}}
+  --valid-data ${{outputs.valid_data}}
+  --calib-data ${{outputs.calib_data}}
+  --test-data ${{outputs.test_data}}

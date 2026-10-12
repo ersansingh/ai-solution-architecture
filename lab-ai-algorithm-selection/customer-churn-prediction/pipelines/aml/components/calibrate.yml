@@ -1,0 +1,33 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+name: churn_calibrate
+display_name: Isotonic calibration, tier thresholds, MLflow model logging
+version: "1"
+inputs:
+  lightgbm_model:
+    type: uri_folder
+  catboost_model:
+    type: uri_folder
+  calib_data:
+    type: uri_folder
+  tier_a_capacity:
+    type: number
+    default: 0.02
+  tier_b_recall:
+    type: number
+    default: 0.80
+outputs:
+  candidate_model:
+    type: uri_folder
+code: ../src
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+  conda_file: ../environments/training-conda.yml
+command: >-
+  python calibrate.py
+  --lightgbm-model ${{inputs.lightgbm_model}}
+  --catboost-model ${{inputs.catboost_model}}
+  --calib-data ${{inputs.calib_data}}
+  --tier-a-capacity ${{inputs.tier_a_capacity}}
+  --tier-b-recall ${{inputs.tier_b_recall}}
+  --candidate-model ${{outputs.candidate_model}}

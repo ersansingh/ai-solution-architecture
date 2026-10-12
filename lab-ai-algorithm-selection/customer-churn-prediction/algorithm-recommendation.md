@@ -1,373 +1,344 @@
-# AI Algorithm & Model Recommendation Report: Enterprise Customer Churn Prediction
+# AI Algorithm & Model Recommendation Report: Enterprise Customer Churn Prediction (Global Telecommunications)
 
-> **Paradigm**: Supervised Learning (Tabular Binary Classification)  
-> **Problem Statement Reference**: `lab-ai-algorithm-selection/customer-churn-prediction/customer-churn-prediction.md`
+> **Paradigm**: Supervised Learning (Binary Classification on Structured Tabular Data)  
+> **Problem Statement**: `lab-ai-algorithm-selection/customer-churn-prediction/customer-churn-prediction.md`  
+> **Skill Reference**: `.agents/skills/ai-algorithm-selector/SKILL.md`  
+> **Template**: `.agents/skills/ai-algorithm-selector/templates/algorithm-recommendation-template.md`
 
 ---
 
 ## 1. Executive Summary
 
-This recommendation report delivers an enterprise-grade AI algorithm selection, feature engineering, evaluation, and MLOps deployment strategy for a global telecommunications provider serving 18 million active subscribers. The core business objective is to proactively predict customer churn within a 90-day forward window, enabling automated and high-converting retention interventions that reduce annual churn from 18% to below 14% (a ≥20% relative churn reduction). The technical requirements demand an operational precision of ≥85%, recall of ≥80%, ROC-AUC ≥0.90, real-time CRM API latency of <500 ms (at peak loads up to 5,000 QPS), and strict compliance with GDPR explainability standards.
+A global telecommunications provider loses about **18% of its 18 million customers each year**. Today it finds likely churners with manual SQL reports and fixed rules (for example, "no login for 30 days"). These methods flag customers too late and produce many false positives. The goal is to predict, **for every active customer each day**, how likely they are to churn **within the next 90 days**. Retention teams can then act early, focus their effort and cut annual churn from 18% to below 14%.
 
-Based on the multi-dimensional analysis of the data landscape (18M customers, 900M multi-year monthly activity records, 240 heterogeneous tabular features, and an 18% positive class imbalance ratio of ~4.55:1), **Gradient Boosted Decision Trees (GBDTs)**—specifically **XGBoost 2.0 (Hist Tree Method with GPU/CPU acceleration)** combined with **LightGBM**—are recommended as the primary production modeling framework. GBDTs consistently deliver state-of-the-art predictive performance on structured tabular telecommunications data, natively handle missing values and non-linear feature interactions, offer built-in loss-weighting for class imbalance, and enable exact local instance-level explainability through TreeSHAP.
+We recommend a **supervised binary classification model built with LightGBM**, a gradient-boosted decision tree (GBDT) library. It is trained on point-in-time feature snapshots of about 240 structured features from CRM, billing, usage, support, digital and marketing data. We recommend **CatBoost** as the alternative and **L2-regularized Logistic Regression with Weight-of-Evidence (WoE) encoding** as the baseline. LightGBM fits every stated constraint. It is the strongest model family for large, mixed-type tabular data. It runs on CPU, which matters because GPU capacity is limited. It handles missing values natively, which suits the 8% missing rate. It scores in under 10 ms per customer. **TreeSHAP** gives exact explanations for each customer, so it meets the requirement for explainable predictions. The design uses two serving paths. A **daily batch pipeline** scores all 18M customers and writes risk scores and the top SHAP drivers to the Feast online store. A **KServe real-time API on AKS** returns the cached score to the CRM in under 50 ms, or rescores on demand when fresh events arrive. Both paths stay well inside the 500 ms / 5,000 RPS SLA.
 
-The proposed architecture implements a hybrid scoring topology: high-throughput daily offline batch scoring on Azure Machine Learning / Azure Databricks with feature caching in Feast (backed by Redis Online Store), alongside a containerized ONNX Runtime microservice deployed via KServe on Azure Kubernetes Service (AKS) for real-time sub-20ms CRM profile queries. This design stays well within the organization's USD 600,000 annual AI budget while providing automated drift monitoring via Evidently AI and CI/CD-driven weekly retraining pipelines.
+**Confidence: High** for the choice of algorithm and architecture. **Medium** for reaching every technical KPI at the same time. At an 18% churn rate, Precision ≥ 85% together with Recall ≥ 80% at one threshold is very ambitious. A churn ROC-AUC of 0.90 or more is usually reached only when strong signals (contract end, support escalations, usage decline) are well engineered. Section 10 sets out how to reframe these targets as operating points tied to campaign capacity.
 
 ---
 
 ## 2. Business Problem Analysis
 
-* **Business Objective**: Proactively identify telecommunication subscribers at risk of churning in the next 90 days to trigger targeted, personalized retention campaigns (e.g., plan discounts, loyalty upgrades, dedicated support outreach), thereby protecting recurring revenue and enhancing customer lifetime value.
-* **Current Process**: The retention workflow currently relies on manual retrospective SQL queries, simplistic heuristic rules (e.g., zero logins for 30 consecutive days, contract expiration within 15 days), customer complaints, and ad-hoc call center escalations.
+* **Business Objective**: Identify customers likely to churn (terminate, or stay inactive for more than 90 consecutive days) within a 90-day horizon. This lets Marketing and Customer Success run targeted, timely retention campaigns.
+* **Current Process**: Manual SQL reports, rule-based triggers (inactivity, contract expiry alerts) and reactive signals (complaints, call-center escalations).
 * **Pain Points**:
-  * Interventions occur too late in the customer lifecycle (often after the customer has already decided to switch carriers).
-  * High false positive rates waste retention budgets on non-churning customers.
-  * Inability to capture complex, multi-variate early warning signals (e.g., subtle combinations of roaming cost surges, declining data velocity, and unresolved tier-2 support interactions).
-* **Expected Outcome**:
-  * Reduce annual subscriber churn rate by at least 20% (from 18% baseline to below 14%).
-  * Increase customer retention campaign conversion rates by 25%.
-  * Decrease customer acquisition cost (CAC) pressure by 15% and increase Customer Lifetime Value (CLV) by 10%.
-  * Elevate brand Net Promoter Score (NPS) through preemptive customer care.
+  * Churn is detected **too late**, often after the decision to leave is made.
+  * Rules generate **many false positives**, which wastes retention offers and budget.
+  * Rules miss **hidden, multi-factor churn patterns** (for example, a gradual drop in data usage together with billing friction and a falling CSAT score).
+  * No consistent risk score or explanation for frontline staff.
+* **Expected Outcome**: At least 20% lower churn, 25% higher campaign conversion, 15% lower acquisition cost, 10% higher customer lifetime value (CLV) and a better NPS.
 * **Success Criteria**:
-  * **Business KPIs**: Annual churn rate < 14%, campaign conversion lift ≥ 25%, CAC reduction ≥ 15%, CLV lift ≥ 10%.
-  * **Technical KPIs**: ROC-AUC ≥ 0.90, PR-AUC ≥ 0.75, Precision ≥ 85%, Recall ≥ 80%, Real-time API Latency < 500 ms (p99 < 100 ms), Weekly retraining drift delta < 3%.
+  * *Business KPIs*: annual churn from 18% to below 14%; +25% retention conversion; −15% CAC; +10% CLV.
+  * *Technical KPIs*: ROC-AUC ≥ 0.90; Precision ≥ 85%; Recall ≥ 80%; real-time latency < 500 ms; 99.95% availability; 5,000 predictions/sec; weekly retraining; < 3% performance degradation between retraining cycles.
 * **Stakeholders**:
-  * **Primary**: Customer Success Team, Marketing Campaign Managers, Retention Sales Agents, Customer Care Support Representatives, Executive Leadership (CMO, CIO).
-  * **Secondary**: Data Science & MLOps Engineering, Business Intelligence Analysts, CRM Platform Engineering, Mobile App Digital Channels Team.
+  * *Primary*: Customer Success, Marketing, Sales Managers, Customer Support, Executive Leadership.
+  * *Secondary*: Data Science, Business Analysts, CRM Platform, Mobile Application.
 * **Constraints**:
-  * **Budget**: Total annual AI infrastructure and operational budget capped at USD 600,000.
-  * **Explainability**: Strict GDPR Article 22 "Right to Explanation" compliance; Customer Success representatives must see individual churn drivers (e.g., SHAP waterfall) in the CRM UI.
-  * **Latency & Throughput**: <500 ms SLA on CRM lookups; throughput scaling up to 5,000 predictions/sec.
-  * **Ecosystem**: Must integrate natively within existing Microsoft Azure infrastructure (Azure ML, ADLS Gen2, AKS, Event Hubs).
+  * *Regulatory*: GDPR, ISO 27001, SOC 2, RBAC, encryption at rest and in transit, audit logging, masking of sensitive fields.
+  * *Explainability*: per-customer churn drivers, feature importance, SHAP values and risk score are mandatory.
+  * *Infrastructure*: Azure-only (Azure ML, ADLS Gen2, AKS + KServe, Feast, MLflow, Event Hubs, Prometheus/Grafana/Azure Monitor, GitHub Actions); **limited GPU**.
+  * *Budget*: USD 600K/year AI budget cap.
+  * *Extensibility*: must scale to multiple countries and new subscription products without a major redesign.
 
 ---
 
 ## 3. AI Suitability Assessment
 
-Before committing to machine learning, alternative deterministic and non-ML approaches were critically evaluated:
-
 * **Alternatives Considered**:
-  1. *Business Rules / Decision Trees (Heuristics)*: Rule-based flags (e.g., `Usage_Drop_30d > 40% AND Ticket_Count > 2`) fail because customer attrition behavior is non-linear, multi-factorial, and evolves dynamically across subscription tiers.
-  2. *SQL Queries & BI Dashboards*: Retrospective BI tools only display historical churn post-facto; they lack probabilistic forward-looking estimation across 240 interacting behavioral dimensions.
-  3. *Workflow Automation (RPA)*: Automates campaign outreach execution but cannot determine the underlying probability of customer attrition.
-  4. *Generative AI / LLMs*: Large Language Models are computationally inefficient and poorly suited for structured tabular scoring across 18 million records with strict low-latency constraints, though LLMs can assist downstream by drafting personalized retention emails based on ML-generated churn drivers.
+  | Alternative | Assessment |
+  | :--- | :--- |
+  | **Business rules / decision trees by hand** | Already in production. They capture single, obvious signals (inactivity, contract expiry) but fail on interactions across 240 features. They are the source of today's late detection and high false-positive rate. **Kept as guardrails and a fallback**, not as the core engine. |
+  | **SQL reports / BI dashboards** | Good for describing who *has* churned and for cohort monitoring. They cannot produce a forward-looking 90-day probability for each customer. Kept for the executive KPI dashboard. |
+  | **Survival analysis (Cox PH, Kaplan-Meier)** | Useful for estimating *time-to-churn* and for analytics. A classical Cox model is less accurate than GBDTs on 240 non-linear, interacting features. Considered as a complementary view (see Section 6). |
+  | **Mathematical optimization** | Useful *downstream*: deciding which at-risk customers get which offer under a campaign budget. Not a replacement for risk prediction. |
+  | **RAG / Generative AI** | Not suitable as the core engine. The task is a numeric risk prediction on structured data. An LLM would add latency, cost and explainability risk without improving accuracy. An LLM could later *summarize* SHAP drivers into plain-language guidance for agents (optional). |
 * **Why ML Is Recommended**:
-  * Supervised Machine Learning handles multi-dimensional non-linear interactions across 240 features spanning CRM, billing, streaming usage, support tickets, and digital channels.
-  * Statistical loss functions optimize the precise trade-off between Precision and Recall, ensuring marketing capital is allocated only to genuine high-risk subscribers.
-  * Continuous automated retraining allows the model to adapt to seasonal trends, competitor pricing moves, and changing customer usage habits.
+  * **Labels are available**: 5 years of historical churn outcomes across 18M customers.
+  * **Many interacting signals**: churn comes from the combined effect of billing, usage trends, service quality and engagement. Supervised ML learns these patterns; hand-written rules cannot.
+  * **Measurable value**: each percentage point of churn on 18M customers is about 180K customers. A model that improves targeting precision over rules directly cuts wasted offers and lost revenue.
+  * **The problem is a standard fit for ML**: telecom churn is one of the most mature and well-proven ML use cases, with established tooling and patterns.
+* **Why ML Is NOT Recommended**: Not applicable. ML is clearly justified. Existing rules should stay as hard overrides, for example to suppress scoring for customers in an active dispute or legal hold.
 
 ---
 
 ## 4. Problem Classification
 
-* **ML Task Category**: Binary Classification ($y \in \{0, 1\}$, where $y=1$ denotes Customer Churn within 90 days, and $y=0$ denotes Active Retention).
-* **Data Modality**: Structured Tabular Data (demographic attributes, billing histories, time-series usage aggregations, categorical service tiers, support event counters).
-* **Learning Paradigm**: Supervised Learning with cost-sensitive loss weighting.
-* **Execution Mode**: Hybrid Execution:
-  1. *Daily Offline Batch Scoring*: Scores all 18M subscribers daily in Azure ML / PySpark, updating customer risk profiles in the Feast Feature Store and CRM data mart.
-  2. *Real-Time Online REST Inference*: Containerized ONNX Runtime microservice on AKS providing instantaneous scoring (<20 ms) when customer attributes are dynamically updated in the CRM or mobile app.
-* **Classification Reasoning**: Ground truth historical labels ($y$) are available over 5 years across 18 million accounts. Binary classification paired with calibrated probability outputs directly enables threshold tuning to meet both business conversion goals and strict Precision/Recall KPIs.
+* **ML Task Category**: **Binary Classification** (Churn = Yes/No within a 90-day horizon), with **calibrated probability output** used as a ranked risk score.
+* **Data Modality**: **Structured tabular** (about 240 features) built from **time-series activity records** (900M monthly records) aggregated into snapshot features. There is also a small **unstructured text** component (support call transcripts), which is optional for Phase 2.
+* **Learning Paradigm**: **Supervised Learning**.
+* **Execution Mode**: **Hybrid**. A **daily offline batch** scores all 18M customers, and a **real-time online API** (< 500 ms) serves the CRM, backed by pre-computed scores and on-demand rescoring.
+* **Classification Reasoning**:
+  * The target is explicitly defined and binary, and historical labels exist, so this is supervised classification.
+  * The business consumes a **ranked risk list** plus a **probability**, which calls for a probabilistic classifier with good calibration rather than a hard label.
+  * Regression is not needed, because the target is not continuous. Forecasting is not needed, because the time dimension is handled by snapshot features and a fixed label horizon. Clustering or anomaly detection is not needed, because labels are available. All three were therefore ruled out as the *primary* framing.
 
 ---
 
 ## 5. Data Assessment
 
-### Data Type & Sources
-* **Customer CRM**: Demographics, tenure, account status, subscription contract type, device tenure.
-* **Billing System**: Monthly charges, invoice payment history, delinquency status, applied discounts, payment channel.
-* **Network & Usage Analytics**: Voice minutes, data consumption (MB/GB), SMS traffic, roaming activity, international calling patterns.
-* **Customer Support & Ticketing**: Ticket volume, mean time to resolution (MTTR), escalation count, CSAT scores, complaint category flags.
-* **Digital Touchpoints**: Mobile self-service app launches, web portal login velocity, feature adoption, session duration.
-* **Marketing Platform**: Campaign exposure history, email open rates, promotional coupon redemption.
+### Data Type
+* **Structured / tabular**: CRM (demographics, tenure, plan, contract), billing (amounts, payment history, balance, discounts, method), usage (voice/data/SMS/roaming, device), digital (app and web sessions, feature adoption), marketing (campaign responses, email opens, offer acceptance, loyalty).
+* **Time-series / event data**: 900M monthly activity records, which are converted into lag, trend and rolling-window features.
+* **Unstructured text**: support call transcripts. These contain heavy PII under GDPR, so they are **deferred to Phase 2** and used only after masking, as derived sentiment and topic features.
+* **Streaming**: Azure Event Hubs is available for near-real-time event features.
 
-### Data Quality Evaluation
-* **Dataset Size**: 18 million active customers, ~900 million historical monthly transactional records spanning 5 years (~1.8 TB raw tabular volume).
-* **Features**: 240 structured features (160 continuous/numerical, 65 low-to-medium cardinality categorical, 15 high-cardinality categorical such as postal code and device model).
-* **Label Availability**: Fully labeled historical ground truth based on verified account cancellation dates and 90-day inactivity thresholds.
-* **Missing Values**: Moderate (~8% overall missingness), concentrated primarily in optional customer demographic fields, legacy billing records, and digital app metrics for offline-only users.
-* **Class Imbalance**: Positive churn rate is ~18% (imbalance ratio ~4.55:1 non-churners to churners).
-* **Outliers**: Extreme skewness in international roaming usage, corporate account billing amounts, and high-frequency support ticket outliers.
-* **Historical Depth**: 60 months (5 years) of continuous historical observation.
-* **Overall Data Quality Score**: **High (8.5/10)** — High volume, long historical depth, and rich multi-system feature availability, with well-understood missingness patterns that can be handled robustly by tree-based algorithms.
+### Data Quality
+* **Dataset Size**: 18M customers; 5 years of history; about 900M monthly activity records. Monthly snapshot training sets will contain hundreds of millions of customer-month rows. **Recommendation**: train on the most recent 24–36 months of monthly snapshots, with stratified downsampling of non-churners where needed.
+* **Features**: about 240 structured features (mixed numerical and categorical). Several categoricals have medium to high cardinality (device model, plan/tariff code, region, complaint category).
+* **Label Availability**: fully labeled (historical churn outcomes). The label **must be rebuilt consistently** using the 90-day definition (termination OR more than 90 consecutive days of inactivity) relative to each snapshot date.
+* **Missing Values**: Moderate (about 8%), concentrated in demographics. The *fact that a value is missing* may itself predict churn, for example for prepaid or anonymous customers.
+* **Class Imbalance**: Moderately imbalanced. The annual churn rate is about 18%. Because the **90-day** positive rate per snapshot will be lower (roughly 4–6% if churn is spread evenly through the year), the imbalance is **stronger than it first appears** and must be measured on the rebuilt labels.
+* **Outliers**: Present in billing amounts (enterprise and family accounts, roaming spikes). Tree models are naturally robust to these; the linear baseline needs clipping.
+* **Historical Depth**: 5 years. This is enough to capture seasonality and multiple product cycles. The oldest years may reflect plans and behaviors that are no longer offered.
+* **Other Challenges**: duplicate customer records (entity resolution needed), inconsistent addresses, seasonal usage changes, concept drift in customer behavior.
+* **Overall Data Quality**: **Medium–High**. Volume, label coverage and feature richness are excellent. Deduplication, label reconstruction and point-in-time correctness are the main data-engineering risks.
 
 ---
 
 ## 6. Recommended Learning Paradigm
 
-* **Selected Paradigm**: **Supervised Learning (Tabular Gradient Boosting & Cost-Sensitive Classification)**.
+* **Selected Paradigm**: **Supervised Learning (GBDT-based binary classification)**, with a calibrated probability output and per-prediction SHAP explanations.
 * **Justification**:
-  * Tabular business data with heterogeneous distributions (mixed continuous, ordinal, and categorical features) is the proven domain where GBDTs outperform deep neural networks in both sample efficiency and top-tier predictive accuracy.
-  * Supervised cost-sensitive learning allows direct optimization against the 18% class imbalance via positive class gradient reweighting (`scale_pos_weight = 4.55`).
-  * Seamless integration with TreeSHAP ensures mathematical fidelity for GDPR regulatory audits.
+  * Rich historical labels and well-defined structured features make this a standard supervised tabular problem.
+  * On structured tabular data of this size, GBDTs consistently match or beat deep learning, train on CPU, and offer exact, fast explanations through TreeSHAP. This satisfies the constraints on limited GPU, explainability and budget together.
+  * A supervised probability output plugs directly into campaign prioritization (rank by risk × CLV).
 * **Alternatives Considered**:
-  * *Unsupervised / Anomaly Detection*: Re-framing churn as an anomaly fails because churners exhibit diverse behavioral patterns rather than simple statistical outliers; also discards rich 5-year labeled ground truth.
-  * *Deep Learning Tabular Architectures (TabNet, FT-Transformer)*: Require 8x–15x higher computational cost during training and hyperparameter search, exhibit higher inference latency (>80 ms), and provide lower explainability fidelity compared to TreeSHAP without providing superior AUC on this tabular schema.
-  * *Reinforcement Learning*: Unnecessary formulation overhead for a static 90-day binary prediction window where offline supervised risk scoring directly feeds existing marketing optimization systems.
+  | Paradigm | Decision |
+  | :--- | :--- |
+  | **Deep Learning (TabNet, FT-Transformer, sequence models over raw events)** | Rejected as primary. It brings little or no accuracy gain over GBDTs on tabular data, needs GPU (a stated constraint), is harder to explain and costs more to run. Could be revisited for raw event-sequence modeling if GBDTs plateau. |
+  | **Survival Analysis (Cox PH, Random Survival Forest, XGBoost-AFT)** | **Complementary, not primary.** It provides expected time-to-churn, which helps decide *when* to intervene. Recommended as a Phase 3 analytical add-on. |
+  | **Unsupervised (clustering / anomaly detection)** | Rejected as primary because labels exist. K-Means/GMM segmentation of at-risk customers is useful *after* scoring, to design campaign personas. |
+  | **Uplift / Causal ML (T-Learner, X-Learner, causal forests)** | **Recommended future extension.** Churn risk shows *who* will leave, while uplift modeling shows *who will respond* to an offer. This directly targets the "+25% campaign conversion" KPI. It needs randomized campaign holdout data, which should be collected from Phase 1. |
+  | **Reinforcement Learning (bandits for offer selection)** | Out of scope for risk prediction. It could optimize offer choice later, once uplift data exists. |
+  | **Generative AI / LLM** | Not suitable for the core prediction (latency, cost, explainability, GDPR). Optional: an LLM-generated plain-language summary of SHAP drivers for CRM agents. |
 
 ---
 
 ## 7. Top Three Algorithms
 
-```
-                                  ┌─────────────────────────────┐
-                                  │   Supervised Tabular Data   │
-                                  │   (18M Users, 240 Features) │
-                                  └──────────────┬──────────────┘
-                                                 │
-                  ┌──────────────────────────────┼──────────────────────────────┐
-                  ▼                              ▼                              ▼
-      ┌───────────────────────┐      ┌───────────────────────┐      ┌───────────────────────┐
-      │   Rank 1: XGBoost     │      │   Rank 2: CatBoost    │      │ Rank 3: Reg. Logistic │
-      │   2.0 / LightGBM 4.0  │      │   (Symmetric GBDT)    │      │  (WoE Encoded Linear) │
-      │   ★ RECOMMENDED ★     │      │     [Alternative]     │      │       [Baseline]      │
-      ├───────────────────────┤      ├───────────────────────┤      ├───────────────────────┤
-      │ • ROC-AUC: 0.92-0.94  │      │ • ROC-AUC: 0.91-0.93  │      │ • ROC-AUC: 0.79-0.81  │
-      │ • Inference: <15 ms   │      │ • Inference: <20 ms   │      │ • Inference: <2 ms    │
-      │ • Exact TreeSHAP      │      │ • Native High-Card    │      │ • Simple Lin. Weights │
-      │ • Lowest Azure Cost   │      │ • Higher VRAM Usage   │      │ • Floor Benchmark     │
-      └───────────────────────┘      └───────────────────────┘      └───────────────────────┘
-```
+All candidates in the skill's classification guide were screened: Logistic Regression, Decision Tree, Random Forest, XGBoost/LightGBM/CatBoost, Naive Bayes, SVM, KNN and neural networks (MLP/TabNet/FT-Transformer).
+* **Decision Tree**: too high variance and too weak on its own.
+* **Naive Bayes**: its independence assumption is badly violated by correlated usage and billing features.
+* **SVM (RBF) and KNN**: do not scale well to hundreds of millions of rows, and KNN cannot meet the latency target at 5,000 RPS.
+* **Random Forest**: a viable model, but it is usually 1–3 AUC points below tuned GBDTs. Its large ensembles also slow inference and produce heavy model artifacts.
+* **Neural networks**: rejected per Section 6.
 
-### Rank 1 (Recommended): Gradient Boosted Decision Trees (XGBoost 2.0 & LightGBM 4.0)
-* **Model Category**: Histogram-based Gradient Boosted Decision Trees (GBDT).
-* **Specific Implementation**: XGBoost 2.0 (`tree_method='hist'`, device acceleration) and LightGBM 4.0 ensemble.
+**XGBoost** is almost interchangeable with LightGBM. LightGBM is preferred for training speed and memory efficiency at this scale.
+
+### Rank 1 (Recommended): LightGBM Gradient-Boosted Decision Trees
+* **Model Category**: Gradient Boosted Decision Tree (histogram-based, leaf-wise growth).
+* **Specific Implementation**: LightGBM 4.x with the `binary` objective, `scale_pos_weight` or `is_unbalance` tuned against PR-AUC, and native categorical handling for low/medium-cardinality features. It is trained on CPU clusters in Azure ML, with distributed training through SynapseML or Dask for full-history runs. **Isotonic or Platt calibration** is fitted on a held-out out-of-time fold. **TreeSHAP** produces explanations for each customer. The model is exported to ONNX or served natively via the KServe LightGBM/MLServer runtime.
 * **Why Recommended**:
-  1. *Unmatched Tabular Accuracy*: Consistently achieves highest ROC-AUC (0.92–0.94) and PR-AUC on mixed-type telecommunications feature sets.
-  2. *Production Efficiency & Latency*: Native C++ engine compiled to ONNX Runtime executes in <15 ms per prediction, easily satisfying the 500 ms SLA at 5,000 QPS.
-  3. *Native Imbalance & Missingness Handling*: Directly handles ~8% missing data via optimal default split direction routing and integrates `scale_pos_weight = 4.55`.
-  4. *Regulatory Explainability*: Supports exact polynomial-time TreeSHAP calculation for local customer explanations in CRM dashboards.
+  * **Business fit and data suitability**: it is the best-in-class model family for large, mixed-type tabular data with about 240 features. It handles the 8% missing values natively without imputation bias and is robust to billing outliers. Its histogram binning keeps training on hundreds of millions of snapshot rows feasible on CPU, within the limited-GPU and USD 600K constraints.
+  * **Performance and latency**: expected ROC-AUC is about 0.88–0.92 with strong feature engineering, which is the most likely route to the ≥ 0.90 target. Single-row inference takes under 5 ms. With pre-computed batch scores, the real-time p99 is far below the 500 ms SLA at 5,000 RPS.
+  * **Explainability and production readiness**: TreeSHAP gives exact feature attributions for each customer in milliseconds. This feeds the "primary churn drivers" shown in the CRM and the explainability dashboard. Monotonic constraints can enforce business-intuitive directions, for example "higher CSAT never increases risk". LightGBM has first-class support in MLflow, Azure ML and KServe.
 
 ### Rank 2 (Alternative): CatBoost
-* **Model Category**: Symmetric (Oblivious) Gradient Boosted Decision Trees.
-* **Specific Implementation**: CatBoost Classifier with ordered target statistics.
+* **Model Category**: Gradient Boosted Decision Tree (symmetric/oblivious trees with ordered boosting).
 * **Why Alternative**:
-  * *High-Cardinality Categoricals*: CatBoost excels when the dataset contains complex high-cardinality categorical features (e.g., postal codes, cell tower IDs, handset IMEI models) without risk of target leakage.
-  * *Trade-off*: Slower GPU training throughput and ~30% higher memory consumption during hyperparameter search compared to LightGBM.
+  * **When to switch**: switch if high-cardinality categoricals (device model, tariff code, region, complaint category, future multi-country product codes) drive performance. CatBoost's ordered target statistics encode them **without target leakage** and need less manual encoding. Its strong out-of-the-box defaults also lower tuning effort when new countries or products are onboarded.
+  * **Trade-off vs Rank 1**: CPU training is slower (about 2–4×) at hundreds of millions of rows, and the distributed-training ecosystem on Azure is less mature. Inference is very fast thanks to symmetric trees. Accuracy is usually within ±0.5 AUC points of LightGBM. **Both should be benchmarked in Phase 5, and the winner promoted.**
 
-### Rank 3 (Baseline): Regularized Logistic Regression with Weight of Evidence (WoE)
-* **Model Category**: Generalized Linear Model (L2/ElasticNet Regularization).
-* **Specific Implementation**: `scikit-learn` `LogisticRegressionCV` with monotonic WoE binning.
-* **Purpose**: Serves as the operational baseline floor (expected ROC-AUC ~0.79–0.81), validating end-to-end data ingestion pipelines and quantifying the exact non-linear lift delivered by GBDT models.
+### Rank 3 (Baseline): L2-Regularized Logistic Regression with WoE Encoding
+* **Model Category**: Generalized Linear Model (cost-sensitive / class-weighted).
+* **Purpose**:
+  * Sets a **performance floor**. GBDTs must clearly beat it (expect about +0.04 to +0.08 AUC) to justify their complexity.
+  * Validates the end-to-end pipeline (labels, point-in-time joins, Feast, MLflow, KServe) quickly and cheaply.
+  * Gives a **fully transparent scorecard** (coefficients and WoE bins) that compliance and business stakeholders can audit directly. It also serves as a **fallback model** if the primary model's monitoring fails.
 
 ---
 
 ## 8. Algorithm Comparison Table
 
-| Evaluation Dimension | Rank 3 Baseline (Logistic Regression + WoE) | Rank 1 Recommended (XGBoost 2.0 / LightGBM) | Rank 2 Alternative (CatBoost) | Deep Tabular (TabNet / FT-Transformer) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Business Fit** | Medium (Under-captures complex risk signals) | **High (Optimal precision/recall balance)** | **High (Excellent on categorical attributes)** | Medium (Excessive complexity for tabular) |
-| **Data Suitability** | Medium (Requires extensive manual feature binning) | **High (Handles 240 mixed features natively)** | **High (Superior categorical handling)** | Medium (Prone to overfitting on tabular) |
-| **Expected Accuracy** | ROC-AUC: 0.79 – 0.81 \| Precision@0.80R: ~68% | **ROC-AUC: 0.92 – 0.94 \| Precision@0.80R: ≥86%** | **ROC-AUC: 0.91 – 0.93 \| Precision@0.80R: ≥85%** | ROC-AUC: 0.88 – 0.91 \| Precision@0.80R: ~81% |
-| **Interpretability** | Native (Linear regression coefficients) | **High (Exact TreeSHAP attribution & waterfall)** | **High (TreeSHAP & feature interaction values)** | Medium (Attention masks / perturbation SHAP) |
-| **Scalability** | High (Linear scalability) | **High (Distributed data-parallel histogram trees)** | **High (Multi-GPU distributed training)** | Moderate (High GPU VRAM memory footprint) |
-| **Training Time** | ~15 minutes (CPU cluster) | **~45 minutes (Single GPU / Multi-core CPU)** | ~90 minutes (GPU) | ~8.5 hours (Multi-GPU cluster) |
-| **Inference Latency** | < 2 ms (p95) | **< 15 ms (p95 via ONNX Runtime)** | **< 20 ms (p95 via CatBoost C++ API)** | ~ 85 ms (p95 via PyTorch C++ LibTorch) |
-| **Computational Cost** | $ (~$150 / month) | **$$ (~$850 / month on Azure)** | **$$ (~$1,200 / month on Azure)** | $$$$ (~$4,500 / month on Azure) |
-| **Hyperparameter Complexity** | Low (`C`, penalty, solver) | **Medium (`max_depth`, `learning_rate`, `subsample`, `colsample`)** | **Low-Medium (Robust default parameters)** | High (Layer dimensions, sparsity, attention steps) |
-| **Production Readiness** | High (Standard `scikit-learn` / ONNX) | **High (Treelite, ONNX Runtime, KServe, Triton)** | **High (CatBoost C++ runtime, ONNX)** | Medium (Requires PyTorch serving container) |
+| Evaluation Dimension | Rank 3 Baseline (Logistic Regression + WoE) | Rank 1 Recommended (LightGBM) | Rank 2 Alternative (CatBoost) |
+| :--- | :--- | :--- | :--- |
+| **Business Fit** | Medium | **High** | High |
+| **Data Suitability** | Medium (needs imputation, encoding, clipping; linear only) | **High** (native NaN, categorical support, outlier-robust, scales to more than 100M rows) | High (best for high-cardinality categoricals) |
+| **Expected Accuracy** | ROC-AUC ~0.80–0.84; PR-AUC ~0.40–0.50 | **ROC-AUC ~0.88–0.92; PR-AUC ~0.55–0.70** | ROC-AUC ~0.88–0.92; PR-AUC ~0.55–0.70 |
+| **Interpretability** | Native (coefficients / scorecard) | High (TreeSHAP, exact, per customer) | High (TreeSHAP, built-in feature interactions) |
+| **Scalability** | High | **High** (distributed via SynapseML/Dask) | Medium–High (slower CPU training at this scale) |
+| **Training Time** | Fast (minutes) | **Moderate** (about 1–3 h on a CPU cluster, full snapshot set) | Moderate–Slow (about 3–8 h CPU) |
+| **Inference Latency** | < 1 ms | **< 5 ms** (single row) + < 10 ms SHAP | < 3 ms (single row) + < 10 ms SHAP |
+| **Computational Cost** | $ | **$$** (CPU only) | $$ (CPU only) |
+| **Hyperparameter Complexity** | Low | Medium (num_leaves, learning_rate, min_child_samples, regularization) | Low–Medium (strong defaults) |
+| **Production Readiness** | High | **High** (MLflow, Azure ML, KServe/MLServer, ONNX) | High (MLflow, KServe custom/ONNX) |
+
+*Expected accuracy ranges are estimates from comparable telecom churn programs, measured on an out-of-time test set. They must be confirmed in Phase 5.*
 
 ---
 
 ## 9. Feature Engineering Recommendations
 
-To extract maximum predictive signal across the 240 raw features, the following preprocessing pipeline must be implemented inside the Feast Feature Store:
-
-```
-Raw Telemetry Sources (CRM, Billing, Usage, Support, Web/App)
-                            │
-                            ▼
-     ┌──────────────────────────────────────────────────────────┐
-     │ 1. Imputation: Median by Plan Tier + "UNKNOWN" Category  │
-     │ 2. Outlier Handling: IQR Winsorization (1st-99th pct)    │
-     └──────────────────────────┬───────────────────────────────┘
-                                │
-                                ▼
-     ┌──────────────────────────────────────────────────────────┐
-     │ 3. Temporal Lags & Velocity (30d/60d/90d Rolling Ratios) │
-     │ 4. Ratio Engineering (Bill Surges, Ticket Escalations)   │
-     │ 5. Encoding: High-Card Frequency + Nominal Target Encod. │
-     └──────────────────────────┬───────────────────────────────┘
-                                │
-                                ▼
-     ┌──────────────────────────────────────────────────────────┐
-     │ 6. Class Balance: scale_pos_weight = 4.55 + PR Threshold │
-     │ 7. Selection: Boruta-SHAP Pruning to Top ~120 Features   │
-     └──────────────────────────────────────────────────────────┘
-```
-
 1. **Missing Value Handling**:
-   * *Numerical metrics (e.g., usage, data consumption)*: Grouped median imputation based on customer subscription tier and device category.
-   * *Categorical attributes*: Missing values flagged as explicit `"UNKNOWN"` categories. GBDTs natively route missing branch splits during training and inference.
-2. **Temporal & Velocity Features**:
-   * Compute 30-day, 60-day, and 90-day rolling averages and velocity deltas:
-     $$\text{Data\_Velocity\_30\_vs\_90} = \frac{\text{Data\_Usage}_{\text{Last 30d}}}{\frac{1}{3}\text{Data\_Usage}_{\text{Last 90d}} + \epsilon}$$
-   * Significant negative velocity ($<0.60$) indicates sharp declining engagement—a strong leading indicator of attrition.
-3. **Ratio & Interaction Features**:
-   * *Billing Overrun Ratio*: $\frac{\text{Current Month Bill}}{\text{6-Month Average Bill}}$ (detects bill shock).
-   * *Support Ticket Escalation Rate*: $\frac{\text{Unresolved Tickets}}{\text{Total Support Inquiries}}$ and $\frac{\text{Calls in Last 14 Days}}{\text{Tenure (Months)}}$.
-   * *Payment Friction Index*: Count of late payment occurrences over the trailing 12 months.
-4. **Encoding Strategies**:
-   * *Low/Medium Cardinality (Contract Type, Payment Method)*: Target Encoding with out-of-fold regularization and smoothing ($m=10$).
-   * *High Cardinality (Device Model, Postal Code)*: Frequency encoding combined with CatBoost/LightGBM native categorical handling.
-5. **Outlier Handling**:
-   * Apply 1st and 99th percentile Winsorization to unbounded financial and data usage metrics to prevent split distortions during tree construction.
-6. **Class Balancing Strategy**:
-   * Set `scale_pos_weight = (100 - 18) / 18 = 4.55` in XGBoost/LightGBM loss objective.
-   * Avoid synthetic oversampling (SMOTE) on 900M records to prevent artificial variance and pipeline overhead; instead optimize the probability classification threshold on the Precision-Recall curve.
-7. **Feature Selection**:
-   * Use **Boruta-SHAP** feature selection to prune redundant features, reducing the active model feature vector from 240 to the ~120 most impactful features, reducing inference latency by ~40%.
+   * GBDTs use native NaN routing, with no imputation.
+   * Add explicit `is_missing_<feature>` indicators for demographic fields, because missingness itself can carry signal.
+   * Logistic baseline: median imputation for numericals, plus a "Missing" category or WoE bin.
+2. **Encoding**:
+   * Low cardinality (plan type, payment method, contract type): native LightGBM categorical, or one-hot for the baseline.
+   * Medium/high cardinality (device model, tariff code, region, complaint category): **out-of-fold target encoding** or frequency encoding for LightGBM, native ordered target statistics for CatBoost, and **WoE encoding** for the logistic baseline.
+3. **Scaling & Normalization**:
+   * Not required for GBDTs.
+   * Logistic baseline: RobustScaler or Yeo-Johnson on skewed billing and usage features.
+4. **Feature Selection**:
+   * Run a variance threshold, then remove highly correlated duplicates (|ρ| > 0.95).
+   * **SHAP-based pruning** and/or **Boruta-SHAP** to reduce about 240 raw features plus engineered features to a compact, stable set of about 80–150. This improves latency, drift robustness and explanation clarity.
+   * Track PSI stability for each feature across time folds, and drop unstable features.
+5. **Feature Creation** (domain-specific, all computed **as of the snapshot date**):
+   * *Tenure and contract*: tenure in months, days to contract end, has the contract been renewed, number of plan changes or downgrades.
+   * *Usage trends*: 30/60/90-day rolling means, and **ratio and slope features** (last 30 days vs prior 90 days) for voice, data, SMS and roaming. Also an *inactivity streak in days*.
+   * *Billing friction*: bill shock (current bill / 6-month average), number of late payments, outstanding-balance ratio, discount expiry within N days, number of payment method changes.
+   * *Service quality*: tickets in the last 30/90 days, average resolution time, repeat-complaint flag, last CSAT, CSAT trend, escalation count.
+   * *Digital engagement*: trends in app and web login frequency, session duration, feature-adoption breadth, days since last login.
+   * *Marketing responsiveness*: email open-rate trend, offer acceptance history, loyalty tier and points-expiry proximity.
+   * *Device*: device age, end-of-life or upgrade eligibility.
+   * *Phase 2 text features*: transcript-derived sentiment and complaint-topic scores. These are produced by an offline batch NLP job on masked transcripts, using a CPU-friendly DistilBERT-class model or Azure AI Language, and are stored as numeric features.
+6. **Outlier Handling**:
+   * GBDTs are robust to outliers, so no treatment is needed.
+   * Logistic baseline: winsorize billing and usage at the 1st/99th percentiles.
+   * Flag extreme billing values (`is_bill_outlier`) as a feature.
+7. **Class Balancing**:
+   * Prefer **loss weighting** (`scale_pos_weight` tuned against PR-AUC) over SMOTE-style synthetic oversampling, which distorts probability calibration and adds little for GBDTs.
+   * Optionally downsample negatives in training to manage volume, then **re-calibrate** probabilities on an untouched, naturally distributed validation fold.
+   * Choose the decision threshold **from the PR curve and the cost matrix** (cost of a retention offer vs CLV lost to churn), not at 0.5.
+8. **Data Augmentation**: Not applicable to tabular churn data. Extra labeled snapshots, built with a sliding monthly window, increase effective sample size without synthetic data.
+9. **Domain-Specific Processing**:
+   * **Point-in-time correct training sets**: build monthly snapshots. Every feature uses only data available *before* the snapshot date, and the label covers the *following* 90 days. Feast's `get_historical_features` with event timestamps enforces this.
+   * **Leakage controls**: exclude any feature that encodes the outcome, such as a disconnect-request flag, a final-bill indicator, or inactivity windows that overlap the label period.
+   * **Entity resolution**: deduplicate customer records (deterministic plus fuzzy matching on masked identifiers) before labeling.
+   * **Seasonality**: add calendar features (month, quarter, holiday period) and month-over-same-month-last-year ratios.
 
 ---
 
 ## 10. Evaluation Metrics
 
-### Primary Optimization Metrics
-* **ROC-AUC (Receiver Operating Characteristic - Area Under Curve)**: Primary model discrimination metric across all classification thresholds (Target: $\ge 0.90$).
-* **PR-AUC (Precision-Recall Area Under Curve)**: Critical for evaluating true positive performance on the 18% imbalanced churn class (Target: $\ge 0.75$).
-
-### Operational SLA Metrics
-* **Precision at Fixed Recall = 80%**: Must achieve $\ge 85\%$ precision to ensure marketing spend is not squandered on false alarms.
-* **Top-Decile Lift**: Lift ratio in the top 10% highest-risk predicted customers relative to random selection (Target: $\ge 3.5\times$ baseline).
-
-### Cross-Validation & Validation Strategy
-* **Temporal Out-of-Time Splitting**:
-  * *Training Set*: Months $T-60$ through $T-4$.
-  * *Validation Set*: Month $T-3$ (used for early stopping and threshold tuning).
-  * *Test Set (Out-of-Time Holdout)*: Months $T-2$ to $T$ (3-month forward churn observation window).
-* **Cross-Validation**: 5-Fold Stratified Group K-Fold (grouped by `customer_id` across sliding temporal windows) to eliminate cross-temporal data leakage.
-
-### Hyperparameter Tuning Framework
-* **Engine**: **Optuna** Bayesian optimization with Tree-structured Parzen Estimator (TPE) and Hyperband early stopping across 250 trials.
-* **Search Space (XGBoost 2.0)**:
-  * `max_depth`: Integer $\in [4, 9]$
-  * `learning_rate`: Log-uniform $\in [0.01, 0.15]$
-  * `subsample`: Uniform $\in [0.65, 0.95]$
-  * `colsample_bytree`: Uniform $\in [0.50, 0.85]$
-  * `min_child_weight`: Integer $\in [2, 12]$
-  * `scale_pos_weight`: Uniform $\in [3.8, 5.2]$
-  * `reg_alpha` (L1): Log-uniform $\in [1e-3, 10.0]$
-  * `reg_lambda` (L2): Log-uniform $\in [1e-2, 20.0]$
+* **Primary Optimization Metric**:
+  * **PR-AUC (Average Precision)** is the model-selection and tuning metric. It is the most informative metric under class imbalance and is directly tied to campaign targeting quality.
+  * **ROC-AUC ≥ 0.90** is tracked as the stated acceptance KPI.
+* **Secondary Metrics**:
+  * **Precision and Recall at the chosen operating threshold**, measured against the 85% / 80% targets.
+  * **Precision@K / Lift@Top-Decile**, where K is the number of customers retention teams can contact each week. This is the most actionable business metric.
+  * **Calibration**: Brier score and Expected Calibration Error. Calibrated probabilities are required to combine risk with CLV (expected revenue at risk = P(churn) × CLV).
+  * **Expected profit / cost-weighted metric**: (TP × saved CLV × offer success rate) − (FP + TP) × offer cost.
+  * **Log-loss**, **F1 / F-beta** (β ≈ 0.9 to weight precision slightly), and **Accuracy** (reported only; see the note below).
+  * **Operational**: p95/p99 API latency, throughput, batch completion time, feature freshness.
+  * **Fairness**: equal opportunity and false-positive-rate parity across protected or sensitive groups (age band, region), to support GDPR fairness obligations.
+* **KPI Feasibility Note**:
+  * **Accuracy ≥ 85% is not a meaningful target.** With an 18% base rate, predicting "no churn" for everyone already gives about 82% accuracy, and on 90-day labels (about 4–6% positives) it gives about 95%. Accuracy should be replaced by PR-AUC and Precision@K as the gating metrics.
+  * **Precision ≥ 85% and Recall ≥ 80% together** at one threshold usually needs ROC-AUC well above 0.95 at this prevalence.
+  * Recommendation: agree on **two operating points** with the business.
+    * A **high-precision tier** (≥ 85% precision) for costly offers.
+    * A **high-recall tier** (≥ 80% recall) for low-cost engagement nudges.
+* **Cross-Validation Strategy**:
+  * **Temporal (out-of-time) validation**, not random K-Fold.
+    * Train on snapshots T₀…Tₙ.
+    * Validate on Tₙ₊₃ (respecting the 90-day label gap).
+    * Test on a later, untouched quarter.
+  * Use **rolling-origin (expanding window) backtests** across 4–6 folds to measure stability across seasons.
+  * Use **group-aware splitting by customer ID** within the training period, so that the same customer's correlated snapshots do not leak across train and validation folds.
+* **Hyperparameter Tuning Framework**: **Optuna** (TPE sampler with median pruning), integrated with MLflow tracking and run on Azure ML compute clusters. The objective is out-of-time PR-AUC with an early-stopping budget.
 
 ---
 
 ## 11. Production Architecture & MLOps
 
-```
-  ┌─────────────────────────────────────────────────────────────────────────────────┐
-  │                           AZURE DATA LAKE STORAGE GEN2                          │
-  │                  (Raw Ingestion from CRM, Billing, Usage, Logs)                 │
-  └────────────────────────────────────────┬────────────────────────────────────────┘
-                                           │
-                                           ▼
-  ┌─────────────────────────────────────────────────────────────────────────────────┐
-  │                    AZURE DATABRICKS / SPARK PREPROCESSING                       │
-  │             (Daily Feature Engineering Pipeline & Schema Validation)            │
-  └────────────────────────┬───────────────────────────────┬────────────────────────┘
-                           │                               │
-                           ▼                               ▼
-  ┌─────────────────────────────────┐             ┌─────────────────────────────────┐
-  │       FEAST FEATURE STORE       │             │    AZURE MACHINE LEARNING       │
-  │  • Offline: ADLS Gen2 (Parquet) │             │  • Distributed GPU Training     │
-  │  • Online: Azure Cache (Redis)  │             │  • Optuna Tuning + MLflow Track │
-  └────────────────┬────────────────┘             └────────────────┬────────────────┘
-                   │                                               │
-                   │ (Online Feature Lookup)                       │ (Model Artifact + ONNX)
-                   ▼                                               ▼
-  ┌─────────────────────────────────────────────────────────────────────────────────┐
-  │                      MODEL REGISTRY & SERVING (MLFLOW + AKS)                    │
-  │                                                                                 │
-  │   ┌─────────────────────────────────────────────────────────────────────────┐   │
-  │   │ KServe on Azure Kubernetes Service (AKS)                                │   │
-  │   │  • ONNX Runtime Microservice Container                                  │   │
-  │   │  • TreeSHAP Fast Explainer Module                                       │   │
-  │   │  • HPA Auto-scaling (5 to 30 Pods)                                      │   │
-  │   └────────────────────────────────────┬────────────────────────────────────┘   │
-  └────────────────────────────────────────┼────────────────────────────────────────┘
-                                           │
-                                           ▼
-  ┌─────────────────────────────────────────────────────────────────────────────────┐
-  │                         REAL-TIME CRM & APPS (< 20 ms)                          │
-  │       Customer Success Dashboard, Retention Campaign Engine, Mobile App         │
-  └────────────────────────────────────────┬────────────────────────────────────────┘
-                                           │
-                                           ▼
-  ┌─────────────────────────────────────────────────────────────────────────────────┐
-  │                     OBSERVABILITY & CONTINUOUS IMPROVEMENT                      │
-  │   • Evidently AI: PSI Data Drift (>0.20 trigger) + KS-Test Concept Drift        │
-  │   • Prometheus & Grafana: Latency, Throughput (5,000 QPS), Error Rate           │
-  │   • GitHub Actions: Automated CI/CD Weekly Retraining & Canary Promotion        │
-  └─────────────────────────────────────────────────────────────────────────────────┘
-```
-
-* **Inference Modes**:
-  * *Batch Scoring*: Daily PySpark batch job scoring all 18M subscribers in ~40 minutes, writing risk percentiles and top 3 churn drivers to Azure Data Lake and CRM data mart.
-  * *Real-Time API*: REST API hosted on AKS via KServe and ONNX Runtime; provides real-time scoring in under 20 ms when customer attributes change dynamically.
-* **Feature Store**: **Feast** on Azure:
-  * *Offline Store*: ADLS Gen2 Parquet tables for reproducible point-in-time training feature joins.
-  * *Online Store*: Azure Cache for Redis for sub-5ms feature lookups during real-time CRM API requests.
-* **Model Registry & Tracking**: **MLflow** integrated natively with Azure Machine Learning.
-* **Model Compilation & Acceleration**: Convert trained XGBoost/LightGBM model to **ONNX format** via `onnxmltools` or compile via **Treelite**, executing on ONNX Runtime C++ backend.
-* **CI/CD & Deployment Strategy**: **GitHub Actions** pipeline with automated canary deployment (10% traffic $\to$ 50% $\to$ 100%) and automated rollback if p99 latency exceeds 100 ms or error rate exceeds 0.01%.
-* **Drift Detection & Retraining Trigger**:
-  * **Evidently AI** evaluates Population Stability Index (PSI) daily on key usage features.
-  * PSI $> 0.20$ or Kolmogorov-Smirnov $p$-value $< 0.05$ on top 10 features triggers an automated Azure ML pipeline to retrain, validate, and register a candidate model.
+* **Inference Mode**: **Hybrid batch + real-time**.
+  * *Daily batch*: an Azure ML pipeline scores all 18M active customers each day (about 18M × < 5 ms, parallelized on CPU, taking well under one hour). It writes the risk score, risk tier, top-5 SHAP drivers and model version to ADLS Gen2 (for analytics and dashboards) and to the **Feast online store** (Azure Cache for Redis).
+  * *Real-time*: a **KServe InferenceService on AKS** behind the CRM API.
+    * The default path reads the precomputed score and drivers from Feast, with a p99 under 50 ms.
+    * An **on-demand rescoring path** recomputes the score with fresh streaming features (from Azure Event Hubs, for example a support call that just ended), with a p99 under 150 ms.
+    * Horizontal Pod Autoscaling sized for 5,000 RPS and deployment across availability zones support the 99.95% availability target.
+* **Training Mode**: **Offline**, with **weekly scheduled retraining** on a rolling 24–36-month snapshot window, as the problem statement requires. Optional warm-start is not needed, because GBDT full retraining on CPU is cheap.
+* **Feature Store**: **Feast**.
+  * Offline store on ADLS Gen2 / Synapse for point-in-time training joins.
+  * Online store on Azure Cache for Redis for low-latency serving.
+  * Streaming feature ingestion from Event Hubs.
+  * One feature definition repository guarantees training-serving parity.
+* **Model Registry**: **MLflow Model Registry**, integrated with Azure ML. It stores model signatures, calibration artifacts, SHAP explainer, data snapshot hash and model card. Stage gates run Staging → Production.
+* **Experiment Tracking**: **MLflow** (Optuna trials, metrics for each time fold, feature-importance artifacts, fairness reports).
+* **Model Serving**: **KServe on AKS** using the MLServer LightGBM runtime or an ONNX Runtime custom predictor. A transformer component handles Feast lookups, and SHAP is returned for each request.
+* **CI/CD Pipeline**: **GitHub Actions**.
+  * *CI*: unit tests, data-contract tests (Great Expectations), leakage checks.
+  * *CT*: Azure ML pipeline trigger for training and evaluation.
+  * *CD*: KServe manifest promotion after automated metric, fairness and latency gates pass, with manual approval for Production.
+* **Monitoring & Drift Detection**:
+  * **Prometheus + Grafana** for latency, RPS, error rate and saturation.
+  * **Azure Monitor** for infrastructure and logs.
+  * **Evidently AI** (scheduled job) for **PSI and KS-test** drift on each feature and on the score distribution. Alert thresholds: PSI > 0.2 on top-20 SHAP features or on score distribution.
+  * Delayed-label performance tracking: realized PR-AUC and Precision@K computed once 90-day outcomes mature, with alerting on degradation above 3% to enforce the KPI.
+  * Executive KPI and explainability dashboards in Power BI or Grafana.
+* **Deployment Strategy**:
+  * Run each new model in **shadow mode** first: it scores in parallel, and its scores are logged but not used, for 1–2 weeks.
+  * Then roll it out as a **canary** (10% → 50% → 100% of CRM traffic) with automatic rollback.
+  * Campaign effectiveness is measured through **A/B testing with a randomized no-offer holdout group**. This group also provides the data needed for future uplift modeling.
+* **Retraining Strategy**:
+  * **Scheduled weekly** retraining, as required.
+  * Plus **drift-triggered** retraining when PSI or performance thresholds are breached.
+  * Each new model is promoted only if it beats the current champion on out-of-time PR-AUC with no calibration or fairness regressions (champion/challenger).
 
 ---
 
 ## 12. Risks and Mitigation
 
-| Risk Category | Specific Risk | Likelihood | Impact | Mitigation Strategy |
-| :--- | :--- | :--- | :--- | :--- |
-| **Data** | Feature Leakage (e.g., cancellation request timestamp included in predictors) | Medium | Critical | Enforce strict point-in-time joins in Feast; exclude all features generated within 7 days prior to churn event. |
-| **Data** | Data Drift from seasonal holiday usage surges | High | Medium | Implement sliding-window baseline normalization in feature pipeline; daily PSI alerts in Evidently AI. |
-| **Model** | Concept Drift (Competitor launches aggressive tariff plan) | High | High | Weekly scheduled model retraining in Azure ML + trigger-based retraining if 30-day rolling ROC-AUC drops by >3%. |
-| **Model** | Probability Calibration Drift | Medium | High | Apply isotonic regression or Platt scaling on validation holdout to ensure output probabilities reflect true churn frequencies. |
-| **Operations** | CRM API Latency Spikes during peak business hours | Low | High | Pre-compute and cache daily batch scores in Redis; compile model to ONNX with AKS Horizontal Pod Autoscaler (5–30 pods). |
-| **Compliance** | GDPR "Right to Explanation" violation | Low | Critical | Serve exact TreeSHAP feature contributions via real-time API; log all predictions and attribution explanations in immutable audit store. |
-| **Business** | Customer fatigue from excessive retention discounting | Medium | Medium | Implement marketing eligibility frequency caps (e.g., maximum 1 retention incentive per customer per 180 days). |
+| Risk | Likelihood | Impact | Mitigation Strategy |
+| :--- | :--- | :--- | :--- |
+| **Feature / label leakage** (features overlapping the 90-day label window; disconnect-request or final-bill signals) | High | High | Point-in-time joins through Feast. Automated leakage tests (features with suspiciously high single-feature AUC). Strict temporal splits with a 90-day gap. Review of the top SHAP features with domain experts. |
+| **Concept drift** (new plans, competitor offers, pricing changes, seasonality) | High | High | Weekly retraining. PSI/KS monitoring. Seasonal calendar features. Rolling training window. Delayed-label performance tracking. |
+| **Data drift / delayed pipelines** (stale features at scoring time) | Medium | High | Feature freshness SLAs and alerts. Data contracts. Batch job retries. The API falls back to the last valid score and flags staleness. |
+| **Unrealistic KPI combination** (85% precision + 80% recall + 85% accuracy) | High | Medium | Agree on two operating points tied to campaign capacity. Replace accuracy with PR-AUC and Precision@K. Report a cost-weighted profit metric. |
+| **Class imbalance** (90-day positive rate lower than the annual 18%) | Medium | Medium | Tuned `scale_pos_weight`. Optimize PR-AUC. Post-hoc calibration. Cost-based thresholding. |
+| **False positives** (unnecessary retention offers, discount cannibalization) | Medium | Medium | High-precision tier for expensive offers. Combine risk × CLV. Plan an uplift model to target only customers who can be persuaded. |
+| **False negatives** (missed churners) | Medium | High | High-recall tier for low-cost nudges. Monitor recall on matured labels. |
+| **Bias & fairness** (proxy discrimination through demographics or region) | Medium | High | Exclude or limit sensitive attributes. Run fairness audits (FPR and equal-opportunity parity) at each release. Publish model cards. Keep a human in the loop for offer decisions. |
+| **GDPR / privacy** (PII in features and call transcripts) | Medium | High | Pseudonymize customer IDs. Mask sensitive fields. Minimize data collected. Document the lawful basis and a DPIA. Defer transcript use to Phase 2 with PII redaction. Apply RBAC, encryption and audit logging (ISO 27001 / SOC 2). Support the right to explanation through SHAP drivers. |
+| **Duplicate / incomplete customer records** | Medium | Medium | Entity-resolution step before labeling. Missing-indicator features. Data-quality gates in CI. |
+| **API latency spikes / availability** (5,000 RPS, 99.95%) | Low | High | Serve from precomputed Feast scores. HPA autoscaling. Multi-AZ AKS. Redis caching. Circuit breaker that falls back to the batch score. |
+| **Budget overrun** (USD 600K cap) | Low | Medium | CPU-only training and serving, spot or low-priority Azure ML compute for tuning, right-sized AKS node pools. Estimated run cost is well under 30% of the budget. |
 
 ---
 
 ## 13. Implementation Roadmap
 
-```
-Month 1: Phase 1-3  (Business Alignment, Data Ingestion & Data Preparation)
-Month 2: Phase 4-6  (Feature Engineering in Feast, Baseline, XGBoost/LightGBM Training)
-Month 3: Phase 7-8  (Optuna Hyperparameter Tuning, SHAP Explainability & Validation)
-Month 4: Phase 9-10 (AKS/KServe Deployment, ONNX Optimization, Drift Monitoring)
-Month 5+: Phase 11  (Weekly Retraining, A/B Testing, Multi-Country Scaling)
-```
-
-| Phase | Activities & Milestones | Duration |
+| Phase | Activities | Duration |
 | :--- | :--- | :--- |
-| **1. Business Understanding** | Align with Customer Success and Marketing on 90-day churn definition, KPI targets, and campaign workflows. | 2 Weeks |
-| **2. Data Collection** | Connect ADLS Gen2 to CRM, billing, network telemetry, support tickets, and digital channel event streams. | 3 Weeks |
-| **3. Data Preparation** | Implement schema validation, deduplication, missing value imputation, and out-of-time train/val/test splits. | 2 Weeks |
-| **4. Feature Engineering** | Build ~120 core features (velocity, ratios, aggregations) and register feature definitions in Feast Feature Store. | 3 Weeks |
-| **5. Model Selection** | Establish Logistic Regression baseline; benchmark XGBoost 2.0, LightGBM, and CatBoost on validation folds. | 2 Weeks |
-| **6. Model Training** | Train distributed GBDT models on 900M record dataset using Azure ML GPU/CPU compute clusters. | 2 Weeks |
-| **7. Hyperparameter Tuning** | Run 250-trial Optuna Bayesian search to optimize PR-AUC, depth, regularizers, and `scale_pos_weight`. | 2 Weeks |
-| **8. Model Evaluation & Explainability** | Validate ROC-AUC ($\ge 0.92$), Precision ($\ge 86\%$), Recall ($\ge 80\%$); build TreeSHAP explanation pipeline. | 2 Weeks |
-| **9. Deployment & Serving** | Containerize ONNX model on AKS with KServe; build REST inference API and daily batch scoring pipeline. | 3 Weeks |
-| **10. Monitoring & Observability** | Deploy Evidently AI drift dashboards, Prometheus/Grafana infrastructure metrics, and automated alert channels. | 2 Weeks |
-| **11. Continuous Improvement** | Launch A/B test against control group in CRM; activate automated weekly retraining and feedback loops. | Ongoing |
+| **1. Business Understanding** | Confirm the 90-day churn definition and edge cases (prepaid, multi-line, business accounts). Agree the operating points (precision tier and recall tier), campaign capacity, offer costs and CLV model. Set up the randomized holdout design. Complete the DPIA and GDPR review. | 2 weeks |
+| **2. Data Collection** | Build ingestion from CRM, billing, usage, support, digital and marketing into ADLS Gen2. Define data contracts. Set up Event Hubs streams for real-time events. | 3 weeks |
+| **3. Data Preparation** | Entity resolution and deduplication. Address standardization. Reconstruct labels per snapshot. Data-quality checks (Great Expectations). Mask PII. | 3 weeks |
+| **4. Feature Engineering** | Write about 240 base features plus trend, ratio and friction features as Feast feature views. Build point-in-time monthly snapshots. Run leakage tests. | 4 weeks |
+| **5. Model Selection** | Logistic Regression + WoE baseline. LightGBM vs CatBoost benchmark on out-of-time folds. Feature selection with SHAP/Boruta. | 2 weeks |
+| **6. Training** | Distributed LightGBM training on Azure ML CPU clusters. Rolling-origin backtests. Probability calibration. | 2 weeks |
+| **7. Hyperparameter Tuning** | Optuna search (PR-AUC objective) with MLflow tracking. Tune `scale_pos_weight` and thresholds. | 1–2 weeks |
+| **8. Evaluation** | KPI validation at the agreed operating points. Calibration, fairness and bias audit. Stakeholder review of SHAP explanations. Write the model card. | 2 weeks |
+| **9. Deployment** | Daily batch scoring pipeline. KServe InferenceService on AKS with Feast integration. GitHub Actions CI/CD. Load test at 5,000 RPS. Shadow, then canary rollout. CRM integration. | 3 weeks |
+| **10. Monitoring** | Evidently drift jobs. Prometheus/Grafana and Azure Monitor dashboards. Delayed-label performance tracking. Explainability and executive KPI dashboards. | 2 weeks |
+| **11. Continuous Improvement** | Weekly retraining automation. Champion/challenger. A/B campaign measurement. Phase 2 transcript features. Phase 3 survival and uplift models. Multi-country rollout. | Ongoing |
+
+**Indicative timeline**: about 6 months to first production release. Some phases run in parallel; for example, Phases 2–4 overlap and Phase 10 is built during Phase 9.
 
 ---
 
 ## 14. Final Recommendation
 
-Deploy an ensemble of **XGBoost 2.0 and LightGBM 4.0** trained on historical multi-system telemetry, optimized for cost-sensitive binary classification via `scale_pos_weight = 4.55` and calibrated on the Precision-Recall curve. The model must be compiled to **ONNX Runtime** and served via **KServe on AKS** backed by the **Feast Feature Store (Azure Cache for Redis)**, with **TreeSHAP** generating real-time explainability drivers for Customer Success representatives. This architecture directly achieves the target KPIs (ROC-AUC $\ge 0.92$, Precision $\ge 86\%$, Recall $\ge 80\%$, Latency $<20$ ms) while operating within the USD 600,000 annual budget and fulfilling all GDPR compliance obligations.
+Deploy a **LightGBM binary churn classifier** trained on point-in-time monthly snapshots of about 240 structured features.
+* It uses calibrated probabilities, cost-sensitive thresholds and **TreeSHAP per-customer explanations**.
+* It is served through a **daily batch scoring pipeline plus a KServe-on-AKS real-time API backed by the Feast online store**.
+* It is retrained weekly under MLflow governance, with Evidently drift monitoring.
+
+**CatBoost** should be benchmarked as the alternative, and **WoE Logistic Regression** kept as both the baseline and a transparent fallback. The design runs on CPU only, which suits the limited GPU capacity, fits easily within the USD 600K budget, and meets the explainability, GDPR and 500 ms latency requirements. Combining risk with CLV, and later adding uplift modeling, is the most direct route to cutting churn from 18% to below 14% and lifting campaign conversion by 25%.
 
 ---
 
 ## 15. Confidence Level
 
-* **Confidence Score**: **High (95%)**
+* **Confidence**: **High** for the paradigm, algorithm and architecture choice. **Medium** for reaching every technical KPI at the same time.
 * **Reasoning**:
-  1. *Clear Problem & Data Modality Match*: The problem is a classical tabular binary classification task with 18 million samples and 5 years of rich labeled history—an environment where GBDT performance and stability are universally proven.
-  2. *Proven Metric Feasibility*: The target metrics (ROC-AUC $\ge 0.90$, Precision $\ge 85\%$, Recall $\ge 80\%$) are realistically achievable given the rich multi-system feature landscape (billing, usage velocity, customer support tickets).
-  3. *Production Architecture Maturity*: The combination of Feast, MLflow, ONNX Runtime, and KServe on AKS provides an established, enterprise-ready pattern that comfortably meets the <500 ms SLA and 5,000 QPS throughput requirement at minimal infrastructure cost.
+  * Telecom churn on structured data is a mature, well-proven problem class, and GBDTs are the established state of the art for it.
+  * The data is large, labeled and feature-rich.
+  * The organization's existing stack (Azure ML, Feast, MLflow, KServe, GitHub Actions) maps directly onto the recommended design.
+  * Uncertainty is concentrated in the **target values**, not the approach: ROC-AUC ≥ 0.90 together with ≥ 85% precision and ≥ 80% recall at one threshold is optimistic for 90-day churn. It also depends on how much signal the engineered trend and service-quality features capture.
 * **Key Assumptions**:
-  * Historical churn definitions remain consistent across all 5 years of training data.
-  * Customer CRM, billing, and network telemetry logs are refreshed daily with less than a 4-hour pipeline lag into Azure Data Lake Storage Gen2.
-  * Marketing and retention teams possess the operational capacity to engage at least 75,000 high-risk customers per month identified by the model.
+  * Historical churn labels can be rebuilt accurately using the 90-day definition at each snapshot date, and the true 90-day positive rate will be confirmed during Phase 3.
+  * Source systems carry reliable event timestamps that allow point-in-time correct feature joins.
+  * The "≥ 85% accuracy" requirement can be redefined as PR-AUC / Precision@K targets, and the business accepts tiered operating thresholds.
+  * Call transcripts are excluded from the initial model pending GDPR review, so only structured features are used in Phase 1.
+  * Retention campaigns will keep a randomized holdout group, so that model impact (and later uplift) can be measured causally.
+  * Customer behavior patterns from the most recent 24–36 months are representative of the near future, apart from drift handled by weekly retraining.

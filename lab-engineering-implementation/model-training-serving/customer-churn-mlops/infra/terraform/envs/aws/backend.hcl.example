@@ -1,0 +1,5 @@
+bucket         = "teleconnect-churn-tfstate-<account-id>"
+key            = "customer-churn-mlops/aws.tfstate"
+region         = "us-east-1"
+encrypt        = true
+use_lockfile   = true

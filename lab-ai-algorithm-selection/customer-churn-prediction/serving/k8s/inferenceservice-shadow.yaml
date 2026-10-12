@@ -1,0 +1,143 @@
+# Shadow InferenceService for the candidate model (deploy-shadow job).
+# Receives mirrored production traffic (virtualservice-mirror.yaml); responses
+# are discarded by Istio. Not exposed through APIM and never written to Redis.
+# The transformer runs with SHADOW_MODE=true and exports
+# churn_shadow_pairs_total / churn_shadow_rank_corr for churn.deploy.shadow_analysis.
+#
+# Rendered by the pipeline:
+#   envsubst < serving/k8s/inferenceservice-shadow.yaml | kubectl apply -f -
+# Variables: ISVC_NAME, KSERVE_NAMESPACE, STORAGE_URI, MODEL_VERSION,
+#            ACR_LOGIN, IMAGE_NAME, IMAGE_TAG, SHADOW_STARTED (UTC ISO-8601;
+#            the shadow-analysis job requires >= 7 days of soak since then)
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: ${ISVC_NAME}-shadow
+  namespace: ${KSERVE_NAMESPACE}
+  labels:
+    app: churn-scoring-shadow
+    churn.ai/role: shadow
+  annotations:
+    churn.ai/model-version: "${MODEL_VERSION}"
+    churn.ai/shadow-started: "${SHADOW_STARTED}"
+    serving.kserve.io/deploymentMode: Serverless
+    serving.knative.dev/progress-deadline: "600s"
+spec:
+  predictor:
+    serviceAccountName: churn-kserve-sa
+    minReplicas: 2
+    maxReplicas: 6
+    scaleMetric: concurrency
+    scaleTarget: 20
+    timeout: 1
+    labels:
+      azure.workload.identity/use: "true"
+    nodeSelector:
+      kubernetes.azure.com/mode: user
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            serving.kserve.io/inferenceservice: ${ISVC_NAME}-shadow
+            component: predictor
+    model:
+      modelFormat:
+        name: lightgbm
+      runtime: kserve-mlserver
+      protocolVersion: v2
+      # candidate (challenger) model exported by register-model to
+      # https://<lake>.blob.core.windows.net/models/<model>/<version>/artifacts
+      storageUri: ${STORAGE_URI}
+      resources:
+        requests:
+          cpu: "2"
+          memory: 4Gi
+        limits:
+          cpu: "2"
+          memory: 4Gi
+      readinessProbe:
+        httpGet:
+          path: /v2/health/ready
+        periodSeconds: 5
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop: ["ALL"]
+  transformer:
+    serviceAccountName: churn-kserve-sa
+    minReplicas: 2
+    maxReplicas: 12
+    scaleMetric: rps
+    scaleTarget: 800
+    timeout: 1
+    labels:
+      azure.workload.identity/use: "true"
+    nodeSelector:
+      kubernetes.azure.com/mode: user
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            serving.kserve.io/inferenceservice: ${ISVC_NAME}-shadow
+            component: transformer
+    containers:
+      - name: kserve-container
+        image: ${ACR_LOGIN}/${IMAGE_NAME}:${IMAGE_TAG}
+        env:
+          - name: STORAGE_URI
+            value: ${STORAGE_URI}
+          - name: CHURN_ISVC
+            value: ${ISVC_NAME}-shadow
+          # Score every mirrored request on both the shadow and the champion
+          # predictor (same feature vector) and export paired metrics.
+          - name: SHADOW_MODE
+            value: "true"
+          - name: CHAMPION_PREDICTOR_HOST
+            value: ${ISVC_NAME}-predictor.${KSERVE_NAMESPACE}
+          - name: CHAMPION_MODEL_NAME
+            value: ${ISVC_NAME}
+          - name: HOP_TIMEOUT_S
+            value: "0.3"
+          - name: LAKE_STORAGE_ACCOUNT
+            valueFrom:
+              configMapKeyRef:
+                name: churn-serving-config
+                key: lake_storage_account
+          - name: REDIS_CONNECTION_STRING
+            valueFrom:
+              secretKeyRef:
+                # synced from Key Vault secret redis-connection-string by the Secrets
+                # Store CSI driver (secretproviderclass-redis.yaml, churn-secrets-sync)
+                name: churn-redis
+                key: connection-string
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+        resources:
+          requests:
+            cpu: "2"
+            memory: 2Gi
+          limits:
+            cpu: "2"
+            memory: 2Gi
+        readinessProbe:
+          httpGet:
+            path: /v2/health/ready
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /v2/health/live
+          periodSeconds: 10
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          capabilities:
+            drop: ["ALL"]

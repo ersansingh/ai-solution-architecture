@@ -1,0 +1,14 @@
+# Azure ML datastore -> lake ADLS Gen2 filesystem `feast-offline` (Feast offline
+# Parquet snapshots, registry and the rendered repo/feature_store.yaml that CI
+# publishes for the training pipeline's feast_config input).
+# Identity-based (no credentials). account_name is overridden by
+# pipelines/aml/scripts/ensure-datastores.sh.
+$schema: https://azuremlschemas.azureedge.net/latest/azureDataLakeGen2.schema.json
+name: lake_feast_offline
+type: azure_data_lake_gen2
+description: Churn Feast offline store and registry - identity-based access
+account_name: stlakeplaceholder
+filesystem: feast-offline
+tags:
+  project: churn
+  zone: feast-offline

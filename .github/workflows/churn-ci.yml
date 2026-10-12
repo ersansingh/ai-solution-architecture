@@ -1,0 +1,59 @@
+# TeleConnect churn MLOps - CI (plan section 6.7 / Phase 10 Task 2). No AWS credentials needed.
+name: churn-ci
+
+on:
+  pull_request:
+    paths: ["lab-engineering-implementation/model-training-serving/customer-churn-mlops/**", ".github/workflows/churn-*.yml"]
+  push:
+    branches: [main]
+    paths: ["lab-engineering-implementation/model-training-serving/customer-churn-mlops/**", ".github/workflows/churn-*.yml"]
+
+defaults:
+  run:
+    working-directory: lab-engineering-implementation/model-training-serving/customer-churn-mlops
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11", cache: pip}
+      - run: pip install -r requirements-dev.txt
+      - run: flake8 src services pipelines deployment scripts tests
+      - run: pytest
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: {terraform_version: 1.9.8}
+      - run: terraform fmt -check -recursive infra/terraform
+      - name: validate envs/local and envs/aws
+        run: |
+          for env in local aws; do
+            (cd infra/terraform/envs/$env && terraform init -backend=false -input=false && terraform validate)
+          done
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint deploy/helm/churn-api && helm lint deploy/helm/churn-api -f deploy/helm/churn-api/values-local.yaml
+      - run: helm template churn-api deploy/helm/churn-api --set targetGroupBinding.enabled=true --set targetGroupBinding.targetGroupArn=arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/x/y > /dev/null
+
+  # LocalStack + Terraform(envs/local) + model-server + churn-api, tested from the Docker test container.
+  local-integration:
+    runs-on: ubuntu-latest
+    needs: [python]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t churn-lightgbm:ci containers/lightgbm
+      - run: ROWS=60000 make local-up
+      - run: make local-test
+      - if: failure()
+        run: docker compose -f local/docker-compose.yml logs --no-color
+      - if: always()
+        run: make local-down

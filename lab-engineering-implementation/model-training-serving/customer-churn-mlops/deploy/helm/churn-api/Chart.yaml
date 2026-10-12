@@ -1,0 +1,6 @@
+apiVersion: v2
+name: churn-api
+description: TeleConnect real-time churn scoring API (FastAPI) - EKS front door for the SageMaker endpoint
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

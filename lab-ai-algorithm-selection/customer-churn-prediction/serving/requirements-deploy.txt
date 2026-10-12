@@ -1,0 +1,10 @@
+# Dependencies for the registry/deploy jobs (register-model, deploy-shadow,
+# shadow-analysis, deploy-canary) that run churn.deploy.{export_model,
+# shadow_analysis,canary_analysis,smoke_test}. The churn package itself is
+# stdlib-only and imported via PYTHONPATH=src; azure-identity provides Entra ID
+# tokens for managed Prometheus, APIM and Blob Storage; azure-storage-blob
+# uploads the model artifacts that KServe loads (export_model).
+azure-identity==1.17.1
+mlflow==2.16.2
+azureml-mlflow==1.57.0
+azure-storage-blob==12.22.0

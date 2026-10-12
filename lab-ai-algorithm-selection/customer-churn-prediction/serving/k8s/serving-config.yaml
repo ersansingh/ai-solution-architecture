@@ -1,0 +1,12 @@
+# Non-secret serving configuration consumed by the transformer.
+# Render: LAKE_STORAGE_ACCOUNT=$(terraform output -raw lake_storage_account_name)
+#         envsubst < serving/k8s/serving-config.yaml | kubectl apply -f -
+# The Redis connection string is NOT here: Secret churn-redis (key connection-string)
+# is synced from Key Vault by the Secrets Store CSI driver (secretproviderclass-redis.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-serving-config
+  namespace: churn-serving
+data:
+  lake_storage_account: "${LAKE_STORAGE_ACCOUNT}"

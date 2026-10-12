@@ -1,0 +1,11 @@
+# Blocking gates evaluated by the pipeline ConditionStep (GateKPIs) on the TEST split.
+auc: 0.90
+precision: 0.85
+recall: 0.80
+# Informational gate (not blocking; see plan G16).
+accuracy: 0.90
+# A new model may not be worse than the currently Approved one by more than this AUC delta.
+max_auc_regression: 0.01
+# Threshold selection on the VALIDATION split: maximise precision subject to recall >= target.
+# Kept 0.02 above the recall gate so sampling noise between validation and test doesn't fail the gate.
+threshold_target_recall: 0.82

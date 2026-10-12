@@ -1,0 +1,34 @@
+# Feast repo config: SINGLE SOURCE OF TRUTH for training (Azure ML), CI
+# (`feast apply`) and serving (copied into the KServe transformer image via the
+# `features` named build context; see serving/Dockerfile).
+#
+# Feast expands ${VAR} from the environment when it loads this file:
+#   LAKE_STORAGE_ACCOUNT    lake ADLS Gen2 account (terraform output lake_storage_account_name)
+#   REDIS_CONNECTION_STRING Key Vault secret redis-connection-string
+#                           ("<host>:6380,ssl=true,password=<key>"); serving gets it from
+#                           k8s Secret churn-redis, CI reads it from Key Vault. Training only
+#                           uses the offline store and never connects to Redis.
+# Azure ML gets a copy rendered by CI (LAKE_STORAGE_ACCOUNT substituted) at
+# feast-offline/repo/feature_store.yaml (pipeline input feast_config).
+#
+# Offline store: Parquet on the lake `feast-offline` filesystem, read with Dask
+# (Feast "file" store; abfss:// via adlfs + DefaultAzureCredential). Databricks
+# Gold jobs export point-in-time Parquet snapshots there (system-design.md 6.1
+# step 4); Feast's Dask reader does not interpret Delta logs.
+# Online store: Azure Cache for Redis Premium (clustered: 2 shards).
+project: churn
+provider: azure
+registry:
+  registry_type: file
+  # Feast 0.40 file registries only accept file/s3/gs paths by scheme; Azure Blob
+  # needs the AzureRegistryStore with an https blob URL (DefaultAzureCredential).
+  registry_store_type: AzureRegistryStore
+  path: https://${LAKE_STORAGE_ACCOUNT}.blob.core.windows.net/feast-offline/registry/registry.db
+  cache_ttl_seconds: 60
+offline_store:
+  type: file
+online_store:
+  type: redis
+  redis_type: redis_cluster
+  connection_string: ${REDIS_CONNECTION_STRING}
+entity_key_serialization_version: 2

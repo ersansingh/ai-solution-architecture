@@ -1,0 +1,38 @@
+# APIM-facing route into KServe (steady state, no mirror).
+#
+# APIM's backend for the Churn Scoring API targets the Istio add-on internal
+# ingress gateway with Host ${CHURN_API_INGRESS_HOST}. This VirtualService (bound
+# to the platform Gateway ${ISTIO_INGRESS_GATEWAY}, e.g.
+# aks-istio-ingress/churn-api-gateway, which terminates TLS for that host)
+# forwards to knative-local-gateway with the authority rewritten to the champion
+# InferenceService's cluster-local host, so KServe's own routing (including
+# canaryTrafficPercent) still decides champion vs canary revision.
+#
+# virtualservice-mirror.yaml is the shadow-time version of this same object; the
+# pipeline's "Remove shadow" step re-applies this file to drop the mirror.
+#
+# Render: envsubst < serving/k8s/virtualservice-api.yaml | kubectl apply -f -
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: ${ISVC_NAME}-api
+  namespace: ${KSERVE_NAMESPACE}
+  labels:
+    app: churn-scoring
+    churn.ai/mirror: "off"
+spec:
+  hosts:
+    - ${CHURN_API_INGRESS_HOST}
+  gateways:
+    - ${ISTIO_INGRESS_GATEWAY}
+  http:
+    - name: champion
+      rewrite:
+        authority: ${ISVC_NAME}.${KSERVE_NAMESPACE}.svc.cluster.local
+      route:
+        - destination:
+            host: knative-local-gateway.istio-system.svc.cluster.local
+            port:
+              number: 80
+          weight: 100
+      timeout: 1s

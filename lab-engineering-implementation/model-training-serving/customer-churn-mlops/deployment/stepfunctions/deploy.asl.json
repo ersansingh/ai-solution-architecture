@@ -1,0 +1,67 @@
+{
+  "Comment": "Approved model package -> staging (rolling) -> smoke test -> prod (blue/green canary, auto rollback). Rendered by Terraform templatefile().",
+  "StartAt": "Init",
+  "States": {
+    "Init": {
+      "Type": "Pass",
+      "Parameters": {"model_package_arn.$": "$.detail.ModelPackageArn", "stage": "staging"},
+      "Next": "DeployStaging"
+    },
+    "DeployStaging": {"Type": "Task", "Resource": "${deploy_fn}", "Next": "WaitStaging", "Catch": [{"ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure"}]},
+    "WaitStaging": {"Type": "Wait", "Seconds": 60, "Next": "StagingStatus"},
+    "StagingStatus": {"Type": "Task", "Resource": "${status_fn}", "Next": "StagingReady?"},
+    "StagingReady?": {
+      "Type": "Choice",
+      "Choices": [
+        {"Variable": "$.in_progress", "BooleanEquals": true, "Next": "WaitStaging"},
+        {"And": [{"Variable": "$.status", "StringEquals": "InService"}, {"Variable": "$.rolled_back", "BooleanEquals": false}], "Next": "SmokeTestStaging"}
+      ],
+      "Default": "NotifyFailure"
+    },
+    "SmokeTestStaging": {"Type": "Task", "Resource": "${smoke_fn}", "Next": "SmokePassed?", "Catch": [{"ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure"}]},
+    "SmokePassed?": {
+      "Type": "Choice",
+      "Choices": [{"Variable": "$.smoke.passed", "BooleanEquals": true, "Next": "PublishStagingConfig"}],
+      "Default": "NotifyFailure"
+    },
+    "PublishStagingConfig": {"Type": "Task", "Resource": "${publish_fn}", "Next": "ToProd"},
+    "ToProd": {
+      "Type": "Pass",
+      "Parameters": {"model_package_arn.$": "$.model_package_arn", "stage": "prod"},
+      "Next": "DeployProd"
+    },
+    "DeployProd": {"Type": "Task", "Resource": "${deploy_fn}", "Next": "WaitProd", "Catch": [{"ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure"}]},
+    "WaitProd": {"Type": "Wait", "Seconds": 120, "Next": "ProdStatus"},
+    "ProdStatus": {"Type": "Task", "Resource": "${status_fn}", "Next": "ProdReady?"},
+    "ProdReady?": {
+      "Type": "Choice",
+      "Choices": [
+        {"Variable": "$.in_progress", "BooleanEquals": true, "Next": "WaitProd"},
+        {"Variable": "$.rolled_back", "BooleanEquals": true, "Next": "NotifyRollback"},
+        {"Variable": "$.status", "StringEquals": "InService", "Next": "ConfigureAutoscaling"}
+      ],
+      "Default": "NotifyFailure"
+    },
+    "ConfigureAutoscaling": {"Type": "Task", "Resource": "${autoscale_fn}", "Next": "PublishProdConfig"},
+    "PublishProdConfig": {"Type": "Task", "Resource": "${publish_fn}", "Next": "NotifySuccess"},
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {"TopicArn": "${sns_topic_arn}", "Subject": "Churn model promoted to production", "Message.$": "States.JsonToString($)"},
+      "End": true
+    },
+    "NotifyRollback": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {"TopicArn": "${sns_topic_arn}", "Subject": "Churn deployment rolled back automatically", "Message.$": "States.JsonToString($)"},
+      "Next": "DeploymentFailed"
+    },
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {"TopicArn": "${sns_topic_arn}", "Subject": "Churn deployment failed", "Message.$": "States.JsonToString($)"},
+      "Next": "DeploymentFailed"
+    },
+    "DeploymentFailed": {"Type": "Fail", "Error": "DeploymentFailed", "Cause": "See SNS notification / execution history"}
+  }
+}

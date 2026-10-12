@@ -35,9 +35,12 @@
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-google-search"
+        "@adenot/mcp-google-search"
       ],
-      "env": {}
+      "env": {
+        "GOOGLE_API_KEY": "${env:GOOGLE_API_KEY}",
+        "GOOGLE_SEARCH_ENGINE_ID": "${env:GOOGLE_SEARCH_ENGINE_ID}"
+      }
     }
   }
 }

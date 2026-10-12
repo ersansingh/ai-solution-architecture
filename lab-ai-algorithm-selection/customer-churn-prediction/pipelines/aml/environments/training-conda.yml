@@ -1,0 +1,20 @@
+# Azure ML training environment for the churn pipeline components (CPU only).
+name: churn-training
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - pandas==2.2.3
+      - pyarrow==17.0.0
+      - deltalake==0.20.2
+      - numpy==1.26.4
+      - scikit-learn==1.5.2
+      - lightgbm==4.5.0
+      - catboost==1.2.7
+      - optuna==4.0.0
+      - feast[azure,redis]==0.40.1
+      - mlflow==2.16.2
+      - azureml-mlflow==1.57.0
+      - azure-identity==1.17.1

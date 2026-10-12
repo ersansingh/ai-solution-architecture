@@ -1,0 +1,42 @@
+# Project-wide settings. Every value can be overridden by an environment variable
+# CHURN_<UPPER_SNAKE_KEY> (e.g. CHURN_BUCKET, CHURN_REGION) - see src/churn/config.py.
+project: teleconnect-churn
+region: us-east-1
+bucket: teleconnect-churn-yourname-lab
+sagemaker_role_arn: ""            # output of terraform: sagemaker_execution_role_arn
+
+prefixes:
+  raw: raw-data
+  processed: processed-data
+  feature_store: feature-store
+  training: training
+  models: models
+  predictions: predictions
+  monitoring: monitoring
+  artifacts: artifacts
+  pipelines: pipelines
+
+feature_group_name: teleconnect-customer-features
+model_package_group: Customer-Churn-Models
+pipeline_name: CustomerChurnPipeline
+experiment_name: customer-churn-experiments
+endpoints:
+  staging: customer-churn-staging
+  prod: customer-churn-prod
+variant_name: AllTraffic
+serving_config_parameter: /teleconnect-churn/{stage}/serving-config
+
+instance_types:
+  processing: ml.m5.2xlarge
+  training: ml.m5.2xlarge
+  endpoint: ml.c5.large
+  batch: ml.m5.xlarge
+
+framework_versions:
+  sklearn: "1.2-1"
+  xgboost: "1.7-1"
+
+batch:
+  instance_count: 4
+  max_payload_mb: 6
+  max_concurrent_transforms: 4

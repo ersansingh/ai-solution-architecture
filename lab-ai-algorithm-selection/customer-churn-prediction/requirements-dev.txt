@@ -1,0 +1,4 @@
+# CI dependencies for the churn package (ci-quality job). The pipeline installs
+# ruff, pytest, pytest-cov, great_expectations and bandit separately.
+-e .
+pyyaml>=6.0

@@ -1,0 +1,2 @@
+# Installed by the SageMaker framework containers before running the bundle.
+PyYAML>=5.4,<7

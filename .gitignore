@@ -31,3 +31,13 @@ TestResults.xml
 *.db
 .beads
 AGENTS.md
+.claude
+.codex
+.cursor
+
+# Beads / Dolt files (added by bd init)
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
+
+.DS_Store

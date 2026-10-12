@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "churn"
+version = "1.0.0"
+description = "Customer churn prediction platform: data contracts, evaluation gates and progressive-delivery tooling"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+deploy = ["azure-identity>=1.17"]
+mlflow = ["mlflow>=2.14", "azureml-mlflow>=1.57"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["terraform"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B905"] # zip(strict=) kept optional for local py<3.10 test runs

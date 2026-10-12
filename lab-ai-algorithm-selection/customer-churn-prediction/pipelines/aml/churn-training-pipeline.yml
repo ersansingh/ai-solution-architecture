@@ -1,0 +1,112 @@
+# Azure ML CLI v2 pipeline job: weekly / drift-triggered churn retraining.
+# Submitted by the ct-train job of pipelines/churn-mlops-pipeline.yml:
+#   az ml job create --file pipelines/aml/churn-training-pipeline.yml \
+#     --set display_name=... --set tags.trigger=... --set inputs.snapshot_date=YYYY-MM-DD
+#
+# prepare_data (Feast point-in-time, OOT split)          -> cpu-training
+#   -> train_lightgbm | train_catboost (Optuna)           -> cpu-tuning-spot (low priority)
+#   -> calibrate (isotonic, tiers, MLflow model "model")  -> cpu-training
+#   -> evaluate (OOT metrics, champion, fairness, latency) -> outputs.evaluation_report
+#
+# Compute names match terraform (azurerm_machine_learning_compute_cluster.training /
+# .tuning). Datastores lake_gold and lake_feast_offline point at the ADLS Gen2
+# filesystems "gold" and "feast-offline" (identity-based access; definitions in
+# datastores/, created by scripts/ensure-datastores.sh from the ct-train job).
+# feast_config is the rendered features/feature_store.yaml that the
+# feature-store-apply job uploads to feast-offline/repo/feature_store.yaml.
+# Registration happens in GitHub (register-model) only after the evaluation gates pass.
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+display_name: churn-retrain
+experiment_name: churn-training
+description: Customer churn 90-day model retraining (LightGBM champion candidate vs CatBoost challenger)
+tags:
+  project: churn
+  trigger: manual
+  git_sha: unknown
+  drift_report: none
+
+settings:
+  default_compute: azureml:cpu-training
+  default_datastore: azureml:workspaceblobstore
+  continue_on_step_failure: false
+  force_rerun: true
+
+inputs:
+  # Overridden by the CI job with today's date (UTC); labels mature after label_gap_days.
+  snapshot_date: "1970-01-01"
+  history_months: 24
+  label_gap_days: 90
+  n_trials: 60
+  model_name: churn-lightgbm
+  champion_alias: champion
+  labels:
+    type: uri_folder
+    path: azureml://datastores/lake_gold/paths/churn_labels/
+    mode: ro_mount
+  feast_config:
+    type: uri_file
+    path: azureml://datastores/lake_feast_offline/paths/repo/feature_store.yaml
+    mode: download
+
+outputs:
+  evaluation_report:
+    type: uri_folder
+    mode: upload
+
+jobs:
+  prepare_data:
+    type: command
+    component: ./components/prepare_data.yml
+    compute: azureml:cpu-training
+    # Identity-based datastores: read the lake with the cluster identity (id-aml)
+    identity:
+      type: managed
+    inputs:
+      snapshot_date: ${{parent.inputs.snapshot_date}}
+      history_months: ${{parent.inputs.history_months}}
+      label_gap_days: ${{parent.inputs.label_gap_days}}
+      labels: ${{parent.inputs.labels}}
+      feast_config: ${{parent.inputs.feast_config}}
+
+  train_lightgbm:
+    type: command
+    component: ./components/train.yml
+    compute: azureml:cpu-tuning-spot
+    inputs:
+      algorithm: lightgbm
+      train_data: ${{parent.jobs.prepare_data.outputs.train_data}}
+      valid_data: ${{parent.jobs.prepare_data.outputs.valid_data}}
+      n_trials: ${{parent.inputs.n_trials}}
+
+  train_catboost:
+    type: command
+    component: ./components/train.yml
+    compute: azureml:cpu-tuning-spot
+    inputs:
+      algorithm: catboost
+      train_data: ${{parent.jobs.prepare_data.outputs.train_data}}
+      valid_data: ${{parent.jobs.prepare_data.outputs.valid_data}}
+      n_trials: ${{parent.inputs.n_trials}}
+
+  calibrate:
+    type: command
+    component: ./components/calibrate.yml
+    compute: azureml:cpu-training
+    inputs:
+      lightgbm_model: ${{parent.jobs.train_lightgbm.outputs.model_dir}}
+      catboost_model: ${{parent.jobs.train_catboost.outputs.model_dir}}
+      calib_data: ${{parent.jobs.prepare_data.outputs.calib_data}}
+
+  evaluate:
+    type: command
+    component: ./components/evaluate.yml
+    compute: azureml:cpu-training
+    inputs:
+      candidate_model: ${{parent.jobs.calibrate.outputs.candidate_model}}
+      train_data: ${{parent.jobs.prepare_data.outputs.train_data}}
+      test_data: ${{parent.jobs.prepare_data.outputs.test_data}}
+      model_name: ${{parent.inputs.model_name}}
+      champion_alias: ${{parent.inputs.champion_alias}}
+    outputs:
+      evaluation_report: ${{parent.outputs.evaluation_report}}

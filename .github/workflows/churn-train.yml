@@ -1,0 +1,45 @@
+# Merge to main -> upsert + start the SageMaker Pipeline (Phase 10 Task 3).
+# Repository variables: AWS_REGION, AWS_DEPLOY_ROLE_ARN (terraform output github_deploy_role_arn),
+#                       CHURN_BUCKET, SAGEMAKER_ROLE_ARN (terraform output sagemaker_execution_role_arn)
+name: churn-train
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lab-engineering-implementation/model-training-serving/customer-churn-mlops/src/**"
+      - "lab-engineering-implementation/model-training-serving/customer-churn-mlops/pipelines/**"
+      - "lab-engineering-implementation/model-training-serving/customer-churn-mlops/config/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency: {group: churn-train, cancel-in-progress: false}
+
+defaults:
+  run:
+    working-directory: lab-engineering-implementation/model-training-serving/customer-churn-mlops
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    environment: ml-training
+    env:
+      CHURN_REGION: ${{ vars.AWS_REGION }}
+      CHURN_BUCKET: ${{ vars.CHURN_BUCKET }}
+      CHURN_SAGEMAKER_ROLE_ARN: ${{ vars.SAGEMAKER_ROLE_ARN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11", cache: pip}
+      - run: pip install -r requirements.txt
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Upsert and start CustomerChurnPipeline
+        run: python pipelines/pipeline.py --upsert --start --git-sha "$GITHUB_SHA" | tee execution.txt
+      - name: Summary
+        run: echo "Pipeline execution $(tail -1 execution.txt). Approve the new version in Model Registry to deploy." >> "$GITHUB_STEP_SUMMARY"

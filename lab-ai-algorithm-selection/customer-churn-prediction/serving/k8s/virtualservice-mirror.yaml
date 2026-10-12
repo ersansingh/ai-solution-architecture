@@ -1,0 +1,76 @@
+# Istio traffic mirroring champion -> shadow (deploy-shadow job), covering BOTH
+#   * APIM traffic arriving at the Istio add-on internal ingress gateway
+#     (host ${CHURN_API_INGRESS_HOST} on gateway ${ISTIO_INGRESS_GATEWAY}), and
+#   * in-mesh callers of the champion's cluster-local host (`mesh` gateway).
+#
+# This is the shadow-time version of the SAME VirtualService (${ISVC_NAME}-api)
+# defined in virtualservice-api.yaml. `kubectl apply` of this file adds the
+# mirror; the "Remove shadow" step re-applies virtualservice-api.yaml to take it
+# out again (Argo CD must ignore spec.hosts/gateways/http[].mirror on this
+# object while a shadow is running, or the sync would remove the mirror).
+#
+# Why a repo-owned VirtualService: KServe/Knative program their own
+# VirtualServices for the InferenceService's external and cluster-local hosts
+# on knative-ingress-gateway / knative-local-gateway. A second VirtualService
+# for those hosts on the same gateway would be merged by Istio in an undefined
+# order, so the mirror route could be shadowed. APIM therefore targets a host
+# only this repo routes (${CHURN_API_INGRESS_HOST}); the route forwards to
+# knative-local-gateway with the authority rewritten to the champion's
+# cluster-local host, so KServe still applies canaryTrafficPercent.
+#
+# Envoy appends "-shadow" to the authority of mirrored requests, which Knative
+# host-based routing would reject, so the mirror targets a plain ClusterIP
+# Service that selects the shadow transformer pods directly (queue-proxy port).
+#
+# Rendered by the pipeline:
+#   envsubst < serving/k8s/virtualservice-mirror.yaml | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${ISVC_NAME}-shadow-mirror
+  namespace: ${KSERVE_NAMESPACE}
+  labels:
+    churn.ai/role: shadow
+spec:
+  type: ClusterIP
+  selector:
+    serving.kserve.io/inferenceservice: ${ISVC_NAME}-shadow
+    component: transformer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8012
+      protocol: TCP
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: ${ISVC_NAME}-api
+  namespace: ${KSERVE_NAMESPACE}
+  labels:
+    app: churn-scoring
+    churn.ai/mirror: "on"
+spec:
+  hosts:
+    - ${CHURN_API_INGRESS_HOST}
+    - ${ISVC_NAME}.${KSERVE_NAMESPACE}.svc.cluster.local
+  gateways:
+    - ${ISTIO_INGRESS_GATEWAY}
+    - mesh
+  http:
+    - name: champion-with-shadow-mirror
+      rewrite:
+        authority: ${ISVC_NAME}.${KSERVE_NAMESPACE}.svc.cluster.local
+      route:
+        - destination:
+            host: knative-local-gateway.istio-system.svc.cluster.local
+            port:
+              number: 80
+          weight: 100
+      mirror:
+        host: ${ISVC_NAME}-shadow-mirror.${KSERVE_NAMESPACE}.svc.cluster.local
+        port:
+          number: 80
+      mirrorPercentage:
+        value: 100.0
+      timeout: 1s

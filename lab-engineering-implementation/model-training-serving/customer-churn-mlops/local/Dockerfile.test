@@ -1,0 +1,8 @@
+# Integration test runner (docker compose --profile test run --rm tests).
+FROM python:3.11-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/srv/src CHURN_CONFIG_DIR=/srv/config
+WORKDIR /srv
+RUN pip install --no-cache-dir pytest==8.3.4 boto3==1.35.90 httpx==0.28.1 PyYAML==6.0.2
+COPY config /srv/config
+COPY src/churn/__init__.py src/churn/config.py src/churn/feature_store.py /srv/src/churn/
+COPY tests/integration /srv/tests/integration

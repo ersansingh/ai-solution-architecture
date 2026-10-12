@@ -1,0 +1,67 @@
+# Single source of truth for the feature contract.
+# Read by: preprocessing / feature engineering (src/churn), Terraform (Feature Group schema),
+# churn-api (request vector order) and the local model server.
+
+record_identifier: customer_id
+event_time: event_time
+label: churn
+
+# Raw source files and their columns (land in s3://<bucket>/raw-data/<source>/ingest_date=YYYY-MM-DD/).
+sources:
+  customers: [customer_id, age, gender, region, customer_segment, tenure_months]
+  billing: [customer_id, monthly_charges, total_charges, payment_method, outstanding_balance, contract_type, avg_days_past_due]
+  usage: [customer_id, internet_package, voice_minutes, data_usage_gb, data_usage_gb_prev_3m, roaming_minutes, support_calls, streaming_service]
+  support: [customer_id, tickets, avg_resolution_hours, complaint_count, satisfaction_score]
+  churn: [customer_id, churn]
+
+# Categorical features with a fixed vocabulary so the encoded column set is deterministic.
+# "Unknown" is appended automatically for imputed/unseen values.
+categorical:
+  gender: [Female, Male]
+  region: [East, North, South, West]
+  customer_segment: [Business, Consumer, Enterprise]
+  payment_method: [Bank Transfer, Credit Card, Debit Card, UPI]
+  contract_type: [Month-to-Month, One Year, Two Year]
+  internet_package: [5G, Cable, DSL, Fiber]
+  streaming_service: ["No", "Yes"]
+  age_band: ["<25", "25-34", "35-49", "50-64", "65+"]
+
+numeric:
+  - age
+  - tenure_months
+  - monthly_charges
+  - total_charges
+  - outstanding_balance
+  - avg_days_past_due
+  - voice_minutes
+  - data_usage_gb
+  - data_usage_gb_prev_3m
+  - roaming_minutes
+  - support_calls
+  - tickets
+  - avg_resolution_hours
+  - complaint_count
+  - satisfaction_score
+  # engineered (src/churn/feature_engineering.py)
+  - average_monthly_spend
+  - customer_lifetime_value
+  - support_frequency
+  - usage_growth_rate
+  - complaint_ratio
+  - payment_delay_score
+  - customer_risk_score
+  - engagement_score
+
+# Numeric columns that get an explicit "<col>_was_missing" indicator.
+missing_indicators:
+  - monthly_charges
+  - total_charges
+  - data_usage_gb
+  - voice_minutes
+  - satisfaction_score
+
+# Clarify bias facets, expressed on the encoded matrix (see churn.preprocessing.transformed_feature_names).
+bias_facets:
+  - {name: "gender=Female", value_or_threshold: [1]}
+  - {name: "age_band=65+", value_or_threshold: [1]}
+  - {name: "region=South", value_or_threshold: [1]}

@@ -1,0 +1,22 @@
+{
+  "name": "silver_billing",
+  "meta": {
+    "data_asset": "silver_billing.csv",
+    "contract_version": "1.0.0",
+    "owner": "churn-data-engineering",
+    "description": "Silver conformed billing invoices (masked, pseudonymized) feeding billing-friction features."
+  },
+  "expectations": [
+    {"type": "expect_table_columns_to_match_set", "kwargs": {"column_set": ["pseudo_customer_id", "invoice_id", "billing_month", "amount_due", "amount_paid", "payment_status", "currency", "ingest_date"], "exact_match": true}},
+    {"type": "expect_table_row_count_to_be_between", "kwargs": {"min_value": 69, "max_value": 75}},
+    {"type": "expect_column_values_to_match_regex", "kwargs": {"column": "pseudo_customer_id", "regex": "^[0-9a-f]{64}$"}},
+    {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "invoice_id"}},
+    {"type": "expect_column_values_to_be_unique", "kwargs": {"column": "invoice_id"}},
+    {"type": "expect_column_values_to_match_regex", "kwargs": {"column": "billing_month", "regex": "^\\d{4}-\\d{2}-01$"}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "amount_due", "min_value": 0, "strict_min": true}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "amount_paid", "min_value": 0}},
+    {"type": "expect_column_values_to_be_in_set", "kwargs": {"column": "payment_status", "value_set": ["paid", "late", "failed", "disputed"]}},
+    {"type": "expect_column_values_to_be_in_set", "kwargs": {"column": "currency", "value_set": ["EUR", "GBP", "CHF", "PLN"]}},
+    {"type": "expect_column_pair_values_a_to_be_greater_than_b", "kwargs": {"column_A": "ingest_date", "column_B": "billing_month", "or_equal": true}}
+  ]
+}

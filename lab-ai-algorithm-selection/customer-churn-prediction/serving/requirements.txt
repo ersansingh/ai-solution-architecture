@@ -1,0 +1,10 @@
+# Runtime dependencies of the KServe transformer image (Feast + TreeSHAP) (serving/Dockerfile)
+# [storage] extra: kserve.storage imports boto3/GCS/Azure clients at module load
+kserve[storage]==0.13.1
+feast[redis]==0.40.1
+lightgbm==4.5.0
+numpy==1.26.4
+httpx==0.27.2
+prometheus-client==0.20.0
+azure-identity==1.17.1
+azure-storage-blob==12.22.0

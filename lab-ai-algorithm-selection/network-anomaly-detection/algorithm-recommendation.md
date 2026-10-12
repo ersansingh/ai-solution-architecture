@@ -1,181 +1,191 @@
 # AI Algorithm & Model Recommendation Report: Enterprise Network Intrusion & Zero-Day Anomaly Detection
 
-> **Paradigm**: Unsupervised Learning (Anomaly Detection / Representation Learning)  
-> **Problem Statement**: [`network-anomaly-detection.md`](file:///c:/Users/DELL/Documents/GitHub/ai-solution-architecture/lab1-ai-algorithm-selection/use-cases/lab1.4-network-anomaly-detection/network-anomaly-detection.md)  
-> **Target Environment**: Apache Kafka + Apache Flink + Feast (Redis) + C++ Triton ONNX Runtime + Prometheus/Grafana  
+> **Paradigm**: Unsupervised Learning (Anomaly & Outlier Detection), evolving to Hybrid Semi-Supervised  
+> **Problem Statement**: `lab-ai-algorithm-selection/network-anomaly-detection/network-anomaly-detection.md`  
+> **Skill**: `.agents/skills/ai-algorithm-selector/SKILL.md`  
+> **Reference Matrix**: `.agents/skills/ai-algorithm-selector/references/algorithm-taxonomy-and-selection-matrix.md`
 
 ---
 
 ## 1. Executive Summary
 
-This recommendation report provides a comprehensive, enterprise-grade AI solution architecture for real-time zero-day network threat detection and network intrusion identification. The operational goal is to inspect **500,000 packet flow events per second** (~2.5 TB daily NetFlow/IPFIX stream) with a strict **sub-10 ms latency SLA**, while identifying novel anomalies without relying on static threat signatures or historical labels. 
+A global telecom and enterprise security provider needs to detect zero-day intrusions, unauthorized access, and data exfiltration across a backbone producing **500,000 NetFlow/IPFIX events per second** (~43 billion records, ~2.5 TB per day). The current Snort/Suricata signatures and fixed bandwidth thresholds cannot see novel attacks, and over 90% of their alerts are false positives. There are **no labels for novel attacks**, and the estimated contamination rate is **0.05%–0.1%**. Scoring must take **< 10 ms per flow** on CPU/GPU edge nodes at perimeter routers, and every alert must name the **top 3 contributing features** for SOC analysts.
 
-Because zero-day threats are by definition unlabelled and highly dynamic, traditional supervised learning models and static signature-based Intrusion Detection Systems (IDS like Snort or Suricata) fail—resulting in over 90% false-positive noise and unacceptably high Mean Time to Detect (MTTD of ~48 hours). 
+We recommend a **streaming unsupervised anomaly detection architecture** built on **Isolation Forest** as the primary scoring model. It is trained on a rolling baseline of recent traffic, enriched with **windowed per-entity behavioural features** computed in Apache Flink, exported to **ONNX** and served on **Triton (ONNX Runtime CPU backend)**. Attribution comes from **TreeSHAP / DIFFI path-depth attribution**. To keep inside the latency budget, it is computed asynchronously and only for the ~0.1% of flows that cross the alert threshold. A **shallow Dense Autoencoder** is the alternative and the planned second stage of a score ensemble. It catches the correlated, multi-feature anomalies that axis-parallel trees can miss. A **robust statistical baseline** (per-feature MAD z-scores with EWMA per-entity thresholds) sets the performance floor. As SOC analysts label alerts, the system should become a **hybrid semi-supervised** pipeline: a LightGBM re-ranker trained on analyst decisions and placed on top of the unsupervised score to cut false positives further.
 
-We recommend a **Hybrid Unsupervised Learning Pipeline** centered on **Extended Isolation Forest (EIF)** compiled to **ONNX Runtime** for high-throughput streaming tabular anomaly scoring (< 3 ms latency), supported by a **Variational Autoencoder (VAE)** for multi-dimensional non-linear feature reconstruction analysis on high-value subnet traffic, and visualized via **UMAP** for real-time SOC threat topology mapping. This solution satisfies all strict latency (<10 ms), throughput (500k QPS), explainability (top 3 feature attribution), and zero-day detection requirements with **High Confidence**.
+Expected outcome: MTTD falls from 48 hours to **< 30 seconds**, and incident-level alert noise drops by **≥ 65%**. P99 scoring latency should be **~1–3 ms per flow** under micro-batching, well inside the 10 ms SLA. **Confidence: Medium-High.** The algorithm choice is mature and fits the constraints well. The main uncertainty is how well the stated metrics can be measured without labels, and an arithmetic conflict between the Precision@Top-1% target and the stated contamination rate (see Sections 10 and 15).
 
 ---
 
 ## 2. Business Problem Analysis
 
-* **Business Objective**: Protect enterprise backbone and telecommunications network infrastructure by detecting zero-day cyber threats, unauthorized network intrusions, and abnormal data exfiltration in real-time.
-* **Current Process**: SOC operations rely on static Snort/Suricata rules, fixed bandwidth thresholds, manual firewall log reviews, and post-incident forensics after exfiltration has already occurred.
-* **Pain Points**: High SOC analyst fatigue caused by >90% false positive alert noise (out of 500,000 events/sec), complete blind spots for novel polymorphic malware or encrypted exfiltration channels, and slow MTTD (averaging 48 hours).
-* **Expected Outcome**: Real-time identification of zero-day threats within 10 seconds of onset, a 65%+ reduction in false-positive alert noise, prevention of data exfiltration breaches, and automated threat isolation.
+* **Business Objective**: Detect novel (zero-day) network threats, intrusions, and data exfiltration in real time without depending on known signatures or historical threat labels, and automate first-line threat isolation for the SOC.
+* **Current Process**: Static Snort/Suricata signature rules, fixed bandwidth threshold alerts, manual firewall log review, and forensics after exfiltration has already happened.
+* **Pain Points**:
+  * Signature systems are blind to polymorphic malware, novel exploit variants, and encrypted command-and-control channels.
+  * Over 90% of alerts are false positives, which causes severe analyst fatigue.
+  * MTTD for zero-day threats is about 48 hours, so detection happens after the damage.
+  * The event volume (500K events/s) is far beyond what people can review.
+* **Expected Outcome**: Zero-day detection within 10 seconds of onset; ≥ 65% reduction in false-positive alerts; prevention of high-severity exfiltration; automated first-stage isolation (quarantine VLAN, firewall block recommendations).
 * **Success Criteria**:
-  * **Business KPIs**: Reduce MTTD from 48 hours to < 30 seconds; reduce SOC alert noise by ≥ 65%; maintain 99.99% network monitoring service availability.
-  * **Technical KPIs**: Precision@K (Top 1% anomaly score) ≥ 88%; False Positive Rate (FPR) ≤ 0.5%; Real-time inference latency < 10 ms per NetFlow event; Stream throughput ≥ 500,000 events/sec.
-* **Stakeholders**: Chief Information Security Officer (CISO), SOC Lead Analysts, Enterprise Network Reliability Engineers (NREs), Security Operations Team.
-* **Constraints**: Real-time scoring SLA (<10 ms per packet flow record), streaming throughput at edge routers, strict explainability (SOC analysts require top 3 feature attributions per alert), and regulatory compliance (ISO 27001, SOC 2 Type II).
+  * *Business KPIs*: MTTD < 30 s (from 48 h); SOC alert noise reduced ≥ 65%; 99.99% monitoring availability.
+  * *Technical KPIs*: Precision@K (top 1% anomaly scores) ≥ 88% on historical audit sets; FPR ≤ 0.5%; < 10 ms streaming scoring latency per flow event; ≥ 500K flow records/s ingestion throughput.
+* **Stakeholders**: SOC analysts (Tier 1–3), CISO and security leadership, network operations (NOC), incident response teams, compliance/audit (ISO 27001, SOC 2), and platform/MLOps engineering.
+* **Constraints**:
+  * **Latency**: < 10 ms per flow, end to end at the scoring service.
+  * **Compute**: Edge CPU/GPU nodes at perimeter routers, so models must be small, ONNX-exportable, and deterministic.
+  * **Explainability**: Mandatory per-alert top-3 feature attribution in analyst-readable form.
+  * **Compliance**: ISO 27001, SOC 2 Type II, and non-intrusive inspection, which means flow metadata only and no payload content retention.
+  * **Availability**: 99.99%, so failure must be graceful (fall back to the statistical baseline and existing signatures).
 
 ---
 
 ## 3. AI Suitability Assessment
 
-### Alternatives Considered
-1. **Static Signature-Based IDS (Snort / Suricata)**: Incapable of detecting zero-day exploits, encrypted exfiltration, or novel attack vectors.
-2. **Fixed Thresholding & SQL Alerting**: Triggers massive alert noise on legitimate traffic bursts while failing on subtle, low-and-slow exfiltration patterns.
-3. **Supervised Classification (GBDTs / Neural Nets)**: Inapplicable due to the total absence of labels for novel zero-day threats and severe class imbalance.
-
-### Why Machine Learning Is Recommended
-Unsupervised Machine Learning is uniquely capable of building multi-dimensional probabilistic baselines of normal network behavior directly from unlabelled streaming telemetry. By scoring traffic based on mathematical isolation distance or latent space reconstruction error, ML isolates novel zero-day anomalies without requiring prior signature definitions, satisfying the required <10 ms latency and 65% noise reduction criteria.
+* **Alternatives Considered**:
+  * **Signature rules (Snort/Suricata)**: Already in place. They work well for *known* threats and should stay as a complementary layer, but by definition they cannot detect zero-days.
+  * **Fixed thresholds / business rules**: Single-feature limits (for example, bytes out > X) are what produce today's 90% false-positive rate. They cannot model the joint distribution of 42 interacting features or per-entity baselines.
+  * **SQL / BI dashboards**: Useful for retrospective hunting, but not real time and not able to spot multivariate deviations.
+  * **Supervised classification (XGBoost on labeled attacks)**: Not viable as the primary approach. There are no labels for novel attacks, and a supervised model learns only the attacks it has already seen, which defeats the zero-day goal.
+  * **RAG / Generative AI**: Not suitable for the scoring path (latency of hundreds of ms, cost at 500K events/s). An LLM *could* help later for alert summarization and triage narratives, off the critical path.
+  * **Graph analytics**: Valuable for lateral-movement and campaign-level detection, but a later phase, not the core per-flow detector.
+* **Why ML Is Recommended**: The task is to model the *normal* multivariate distribution of high-dimensional, non-stationary traffic and flag deviations in it. Rules cannot express this, and labels do not exist for it. Unsupervised density/isolation-based anomaly detection is the standard, proven way to find "unknown unknowns." It turns 500K events/s into a ranked, explainable alert stream that the SOC can act on.
+* **Why ML Is NOT Recommended (scope limits)**: ML should **not replace** signature-based IDS for known threats (signatures are cheaper and precise there), and it should **not autonomously enforce** high-impact blocks without a human or a policy gate. Automated isolation should be limited to reversible, low-blast-radius actions at first.
 
 ---
 
 ## 4. Problem Classification
 
-* **ML Task Category**: Unsupervised Anomaly & Outlier Detection / Dimensionality Reduction
-* **Data Modality**: Streaming Telemetry (NetFlow / IPFIX continuous & discrete continuous attributes)
-* **Learning Paradigm**: Unsupervised Density & Isolation Estimation (with Self-Supervised VAE reconstruction)
-* **Execution Mode**: Real-Time Streaming Ingestion (Apache Flink) + C++ Triton ONNX Microservice
-* **Classification Reasoning**: Ground truth threat labels are absent for zero-day attacks. Telemetry flows continuously at 500,000 events/sec. Unsupervised density/isolation algorithms allow computing anomaly scores continuously $[0.0, 1.0]$ with sub-10 ms latency.
+* **ML Task Category**: Anomaly / Outlier Detection (novelty detection on streaming tabular telemetry), with a secondary ranking task (prioritizing alerts for SOC triage).
+* **Data Modality**: Structured tabular time-series / streaming events (NetFlow/IPFIX records with 42 numerical and categorical attributes), with implicit graph structure (source/destination hosts).
+* **Learning Paradigm**: Unsupervised Learning (primary), moving to Hybrid Semi-Supervised once analyst feedback labels build up.
+* **Execution Mode**: Real-time streaming (Kafka → Flink → Triton) with micro-batched inference at edge nodes; offline daily/rolling retraining.
+* **Classification Reasoning**: The target ("significant deviation from baseline behaviour") is defined by distribution, not by labeled classes. Labels for novel attacks are absent by definition, and the 0.05–0.1% contamination rate fits the "rare and different" assumption that isolation- and reconstruction-based detectors rely on. The data is tabular and medium-dimensional (42 features), so tree-based isolation methods are well suited and deep sequence models are not needed for the core detector.
 
 ---
 
 ## 5. Data Assessment
 
 ### Data Type
-* Semi-structured NetFlow v9 / IPFIX packet flow records streamed via Kafka topics.
+* Streaming structured telemetry (NetFlow/IPFIX), which is semi-structured at ingestion and normalized to a fixed 42-attribute schema.
+* Implicit temporal structure (inter-arrival times, per-host sequences) and graph structure (host-to-host communication).
 
 ### Data Quality
-* **Dataset Size**: 500,000 flow records per second (~43 billion records per day / ~2.5 TB daily telemetry log stream).
-* **Features**: 42 attributes including flow duration, packet counts, byte ratios, TCP window sizes, SYN/ACK ratios, payload Shannon entropy, port frequencies, and inter-arrival time distributions.
-* **Label Availability**: Unlabeled live streaming data (Zero historical ground-truth labels for zero-day attacks).
-* **Missing Values**: Low (< 0.1%); missing network fields imputed at streaming ingest via median/mode lookup.
-* **Class Imbalance / Contamination**: Contamination factor estimated at **0.05% to 0.1%** (malicious anomaly rate in normal baseline traffic).
-* **Outliers**: Extreme volumetric spikes present in normal traffic (e.g., scheduled backups) requiring robust scaling.
-* **Historical Depth**: 30 rolling days of NetFlow telemetry retained in cold data lake for baseline retraining.
-* **Overall Data Quality**: **High** (Structured schema, high-frequency continuous metrics, low missingness).
+* **Dataset Size**: 500K events/s, ~43B records/day, ~2.5 TB/day. Training does not need the full volume; stratified subsamples of 1–10M recent flows per segment are enough for Isolation Forest (the algorithm subsamples 256–4,096 points per tree by design).
+* **Features**: 42 NetFlow/IPFIX attributes. These are mostly continuous (flow duration, packet/byte rates, byte ratios, TCP window sizes, SYN/ACK ratios, payload entropy, inter-arrival time statistics), plus categorical/high-cardinality fields (ports, protocols, IPs/ASNs).
+* **Label Availability**: Unlabeled. Limited weak labels are available from historical incident audit sets, existing signature hits (known-attack proxies), and red-team exercises.
+* **Missing Values**: Assumed low to moderate (< 5%). Missing TCP fields on UDP/ICMP flows are *structurally* missing, not randomly missing, and must be handled per protocol.
+* **Class Imbalance**: Severely imbalanced, with an estimated 0.05%–0.1% contamination (1:1,000 to 1:2,000).
+* **Outliers**: Benign heavy-tailed outliers are very common (backups, CDN bursts, software updates, scanners run by IT). These are the main source of false positives and must be modeled as normal through per-entity baselines and allow-lists.
+* **Historical Depth**: Assumed ≥ 30–90 days of retained flow logs for building baselines and capturing weekly seasonality.
+* **Overall Data Quality**: **Medium-High.** Volume and feature richness are excellent and the schema is standardized. Quality is limited by the lack of labels, non-stationarity (concept drift from new services and topology changes), and possible baseline contamination with undetected ongoing attacks.
 
 ---
 
 ## 6. Recommended Learning Paradigm
 
-* **Selected Paradigm**: **Unsupervised Learning & Self-Supervised Latent Representation**
-* **Justification**: Zero-day threats have no pre-existing attack signatures or training labels. Unsupervised paradigms learn the mathematical manifold of "normal" network telemetry, flagging any significant deviation as an anomaly.
+* **Selected Paradigm**: **Unsupervised Learning (Anomaly Detection)**, designed to become **Hybrid Semi-Supervised** (unsupervised detector plus a supervised re-ranker trained on analyst feedback).
+* **Justification**:
+  * Zero-day detection needs a model of *normal*, not a model of *known bad*. Unsupervised methods generalize to attack types that have never been seen.
+  * The low contamination rate (≤ 0.1%) makes training on raw production traffic workable for robust methods such as Isolation Forest, with a `contamination` prior to calibrate thresholds.
+  * The < 10 ms per-event CPU latency and per-alert explainability requirement favour tree ensembles over deep models (see the latency/explainability spectrum in the reference matrix: Isolation Forest is in the "< 10 ms" tier).
+  * The semi-supervised phase uses SOC dispositions (true positive / benign / false positive) to learn site-specific "benign weirdness," which is the main way to reach the ≥ 65% noise reduction target.
 * **Alternatives Considered**:
-  * *Supervised Learning*: Rejected due to label unavailability for novel zero-day attacks.
-  * *Semi-Supervised (One-Class)*: Evaluated but sensitive to baseline contamination during retraining.
-  * *Reinforcement Learning*: Not applicable for non-interactive passive network monitoring.
+  * **Supervised Learning**: Rejected as primary because there are no labels for novel attacks and it would overfit to known attack families. It is kept for the Phase 2 re-ranker.
+  * **Self-Supervised Deep Learning (sequence transformers over flow sequences)**: Rejected for the critical path because of latency, GPU cost at edge nodes, and weak explainability. It could be an offline hunting tool later.
+  * **Graph ML (GNNs for lateral movement)**: Deferred to a later phase. It targets campaign-level detection rather than per-flow scoring.
+  * **Reinforcement Learning (automated response)**: Rejected. The response policy should be deterministic and auditable for SOC 2 / ISO 27001.
 
 ---
 
 ## 7. Top Three Algorithms
 
-### Rank 1 (Recommended): Extended Isolation Forest (EIF) compiled to ONNX Runtime
-* **Model Category**: Tree-Based Unsupervised Anomaly Isolation
-* **Specific Implementation**: Extended Isolation Forest (EIF) exported to C++ ONNX Runtime via `skl2onnx` / `treelite`
+### Rank 1 (Recommended): Isolation Forest (with Extended Isolation Forest evaluation)
+* **Model Category**: Tree-based ensemble isolation anomaly detector.
+* **Specific Implementation**: `scikit-learn` `IsolationForest` (200–300 trees, `max_samples` 512–2048, `contamination` ≈ 0.001), exported via `skl2onnx` to ONNX and served on Triton's ONNX Runtime CPU backend. Separate models per traffic segment (for example, per protocol family or per perimeter zone). Benchmark Extended Isolation Forest (`eif`/`isotree`), which removes the axis-parallel scoring artifacts at little cost. Use `isotree` if ONNX export of EIF is not needed.
 * **Why Recommended**:
-  * **Solves Axis-Parallel Bias**: Standard Isolation Forest splits hyperplanes parallel to feature axes, creating artificial artifacts in correlated network metrics (e.g. byte volume vs packet count). EIF cuts hyperplanes at random angles in hyper-dimensional space, accurately isolating complex multi-attribute network anomalies.
-  * **Low Latency & High Throughput**: EIF inference requires simple geometric hyperplane dot products ($O(T \log N)$ depth), executing in **< 3 ms** per flow on CPU, effortlessly scaling to 500,000 QPS across distributed Triton instances.
-  * **Native Feature Attribution**: Path-length isolation depth per decision branch directly yields feature attribution scores for SOC analyst explainability.
+  * **Business fit and data suitability**: Designed for the "few and different" anomaly profile at 0.05–0.1% contamination. It needs no labels, handles mixed-scale continuous features without distance metrics, and is robust to irrelevant features. It is the matrix's primary recommendation for "Unsupervised Tabular Anomaly Detection (Zero Historical Labels)."
+  * **Latency and throughput compliance**: Inference is O(trees × log₂(max_samples)), about 2,500 node comparisons per flow, which means microseconds per event on CPU. ONNX Runtime with micro-batches of 256–1,024 flows sustains 500K events/s across a modest edge CPU fleet with P99 well under 10 ms. Training on subsamples takes seconds to minutes, so frequent rolling retrains for drift are cheap.
+  * **Explainability and production readiness**: TreeSHAP natively supports `IsolationForest`. DIFFI (Depth-based Isolation Forest Feature Importance) gives cheaper per-sample attribution. Both give the required top-3 features (for example, "SYN/ACK ratio 14σ above host baseline + outbound payload entropy 7.9 bits/byte"). The library is mature and the model is deterministic, small (a few MB), and easy to version and audit.
 
-### Rank 2 (Alternative): Variational Autoencoder (VAE)
-* **Model Category**: Deep Generative Reconstruction Architecture
-* **Specific Implementation**: PyTorch VAE with 1D-Convolutional / Dense Bottleneck compiled via TensorRT
+### Rank 2 (Alternative): Shallow Dense Autoencoder (reconstruction-error detector)
+* **Model Category**: Neural reconstruction-based anomaly detector (undercomplete autoencoder; a VAE variant is optional).
+* **Specific Implementation**: PyTorch MLP autoencoder (for example, 64→32→12→32→64 over scaled/encoded features), trained on filtered "clean-baseline" traffic, exported to ONNX (INT8 quantized), and served on Triton. The anomaly score is reconstruction error normalized per segment. Per-feature reconstruction error gives the top-3 attribution directly.
 * **Why Alternative**:
-  * **Deep Latent Interaction Modeling**: VAE compresses 42 telemetry features into a low-dimensional latent space ($z \in \mathbb{R}^8$) and measures Mean Squared Error (MSE) reconstruction loss. Anomalous traffic patterns cannot be reconstructed accurately, yielding high reconstruction error.
-  * **Key Trade-off**: Higher computational and latency footprint (~8 ms GPU inference vs ~3 ms CPU for EIF). Recommended as a parallel secondary model for high-risk corporate subnets.
+  * **When to switch / add**: When analyst review or red-team testing shows the Isolation Forest missing *correlated* anomalies, where each feature is individually normal but the combination is not. Examples are low-and-slow exfiltration that mimics normal byte rates with unusual timing/entropy coupling, or protocol tunneling. Autoencoders learn non-linear feature correlations that axis-parallel isolation trees approximate poorly. The recommended end state is a **rank-normalized ensemble (IF + AE)**.
+  * **Key trade-off vs Rank 1**: Training is heavier and more sensitive to hyperparameters (architecture, bottleneck size, threshold). It needs a cleaner training baseline because autoencoders can learn to reconstruct contamination. Inference is still fast (~0.5–2 ms per micro-batch on CPU with ONNX INT8), but monitoring and retraining add operational complexity.
 
-### Rank 3 (Baseline): Streaming Robust Z-Score / Median Absolute Deviation (MAD)
-* **Model Category**: Univariate / Bivariate Statistical Baseline
-* **Specific Implementation**: Sliding-window Robust Z-Score ($Z = \frac{x - \text{median}}{\text{IQR}}$) implemented directly in Apache Flink stateful operators.
-* **Purpose**: Provides an immediate baseline benchmark for volumetric DDoS spikes, validating streaming ingest pipelines before model deployment.
+### Rank 3 (Baseline): Robust Statistical Baseline (MAD z-scores + per-entity EWMA thresholds)
+* **Model Category**: Statistical / rule-based univariate outlier detection.
+* **Specific Implementation**: Per-feature robust z-scores (median / MAD) computed against per-entity (host, subnet, service) rolling baselines with exponentially weighted moving averages in Flink. Alert when k features exceed |z| > 4–6.
+* **Purpose**: Sets the performance floor and the false-positive benchmark that the ML models must beat, validates the streaming pipeline end to end, and acts as the **fail-safe fallback** if the model-serving tier degrades (to meet the 99.99% availability KPI). The output is fully transparent, and analysts trust it as a sanity check.
+
+*Also evaluated and not ranked*: **Local Outlier Factor**: its kNN-based inference cost and memory footprint are prohibitive at 500K events/s. **One-Class SVM**: O(n²) training, poor scaling to millions of samples, sensitive to kernel/ν tuning. **Deep SVDD**: hypersphere collapse risk, weak explainability, no clear accuracy gain over an AE on 42 tabular features. **HDBSCAN**: useful offline for clustering alerts into campaigns, not for real-time per-flow scoring.
 
 ---
 
 ## 8. Algorithm Comparison Table
 
-| Evaluation Dimension | Rank 3 Baseline (Robust Z-Score / MAD) | Rank 1 Recommended (Extended Isolation Forest) | Rank 2 Alternative (Variational Autoencoder) | Candidate (One-Class SVM) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Business Fit** | Medium (Volumetric only) | **High (Zero-day + Low noise)** | **High (Deep feature interactions)** | Low (Too slow) |
-| **Data Suitability** | Low (Single metric) | **High (42 NetFlow attributes)** | **High (Complex non-linear data)** | Low (Scalability bottleneck) |
-| **Expected Accuracy** | Low (Precision@1% ~40%) | **High (Precision@1% ≥ 88%)** | **High (Precision@1% ≥ 90%)** | Moderate (Precision ~70%) |
-| **Interpretability** | Native (Single metric) | **High (Path Length / SHAP)** | Medium (Reconstruction Error) | Low (Dual space weights) |
-| **Scalability** | High (> 1,000,000 QPS) | **High (> 500,000 QPS / Cluster)** | High (Requires GPU scaling) | Low ($O(N^2)$ memory bound) |
-| **Training Time** | Negligible (< 1 min) | **Fast (15 mins on 10M rows)** | Moderate (2 hours on GPU) | Extremely Slow (> 12 hours) |
-| **Inference Latency** | < 1 ms | **< 3 ms (Compiled ONNX)** | ~ 8 ms (TensorRT GPU) | ~ 45 ms (Memory bound) |
-| **Computational Cost** | $ (Minimal CPU) | **$$ ($1,200/mo CPU Edge)** | $$$ ($3,800/mo GPU Cluster) | $$$$ ($5,500/mo RAM) |
-| **Hyperparameter Complexity**| Low (Window size, $\sigma$) | **Low (Trees=200, Sample=512)** | High (Latent dim, $\beta$-loss) | High ($\gamma$, $\nu$ parameters) |
-| **Production Readiness** | High (Built-in Flink) | **High (ONNX / Triton Native)** | High (PyTorch / TensorRT) | Moderate (scikit-learn) |
+| Evaluation Dimension | Rank 3 Baseline (Robust MAD z-score + EWMA) | Rank 1 Recommended (Isolation Forest) | Rank 2 Alternative (Dense Autoencoder) |
+| :--- | :--- | :--- | :--- |
+| **Business Fit** | Medium (transparent, but univariate and noisy) | High (zero-day, label-free, explainable) | High (catches correlated / stealthy anomalies) |
+| **Data Suitability** | Medium (ignores feature interactions) | High (mixed-scale tabular, low contamination) | High (non-linear correlations; needs a cleaner baseline) |
+| **Expected Accuracy** | Precision@K ~40–60%; FPR 1–3% | Precision@K ~80–90%*; FPR ≤ 0.5% | Precision@K ~82–92%*; FPR ≤ 0.5% (higher as ensemble with IF) |
+| **Interpretability** | Native (per-feature z-scores) | High (TreeSHAP / DIFFI top-3 features) | Medium-High (per-feature reconstruction error) |
+| **Scalability** | High (O(1) streaming state per entity) | High (subsampled training, embarrassingly parallel inference) | Medium-High (GPU helpful for training; CPU inference fine) |
+| **Training Time** | Fast (streaming, no training job) | Fast (seconds–minutes on subsamples) | Moderate (tens of minutes–hours per segment) |
+| **Inference Latency** | < 0.1 ms | < 1 ms per flow (P99 ~2–3 ms with micro-batch) | ~1–2 ms per flow (ONNX INT8, micro-batch) |
+| **Computational Cost** | $ | $ | $$ |
+| **Hyperparameter Complexity** | Low (k, z-threshold, EWMA decay) | Low (n_estimators, max_samples, contamination) | High (architecture, bottleneck, learning rate, threshold) |
+| **Production Readiness** | High | High (sklearn → ONNX → Triton, mature) | Medium-High (requires stricter drift/retraining governance) |
+
+\* Measured as Precision@K with K sized to the expected anomaly count on labeled audit and red-team sets (see Section 10 on metric definitions).
 
 ---
 
 ## 9. Feature Engineering Recommendations
 
-1. **Robust Scaling**: Apply `RobustScaler` (using median and Interquartile Range) to 42 numerical attributes to prevent extreme volumetric traffic spikes from distorting scaling parameters.
-2. **Payload Entropy Extraction**: Calculate Shannon Entropy for packet payload byte distributions ($H(X) = -\sum P(x) \log_2 P(x)$) to detect encrypted data exfiltration channels and tunneling protocols.
-3. **Ratio & Velocity Features**:
-   * `SYN_to_ACK_Ratio` = $\frac{\text{SYN Packets}}{\text{ACK Packets} + 1}$ (flags SYN flood reconnaissance).
-   * `Byte_Per_Packet_Ratio` = $\frac{\text{Total Bytes}}{\text{Total Packets}}$ (identifies small-packet DDoS vs large-file exfiltration).
-   * `Flow_Velocity` = $\frac{\text{Total Packets}}{\text{Flow Duration (ms)}}$.
-4. **Temporal Window Aggregations**: Compute sliding 10-second and 60-second rolling means and variances in Apache Flink for source IP flow counts and destination port diversity.
-5. **Categorical Embedding / Frequency Encoding**: Encode high-cardinality IP ports and protocol flags using frequency encoding and target-independent port categorization.
-6. **Contamination Calibration**: Calibrate anomaly score threshold $\tau$ based on quantile matching targeting an expected baseline contamination factor $\alpha = 0.001$ (0.1%).
+1. **Missing Value Handling**: Treat protocol-dependent fields as structurally missing. Impute with a sentinel value plus a binary `is_tcp`/`field_present` indicator instead of the median, so that UDP/ICMP flows are not marked anomalous for missing TCP fields. Segment models by protocol family where distributions differ sharply. Route truly corrupt records (schema violations) to a dead-letter queue, not to the model.
+2. **Encoding**: Ports: bucket into well-known / registered / ephemeral ranges, plus frequency encoding of the specific port within the entity's history (rarity = signal). Protocol: one-hot (low cardinality). IPs/ASNs: do **not** encode raw. Replace them with derived features such as internal/external flag, geo/ASN reputation score, and first-seen-recency for the destination.
+3. **Scaling & Normalization**: Isolation Forest is scale-invariant per feature, but apply `log1p` to heavy-tailed counters (bytes, packets, duration) for stable SHAP attributions. For the autoencoder, use a `QuantileTransformer` or RobustScaler fitted per segment to blunt heavy tails.
+4. **Feature Selection**: Remove near-constant and highly redundant (|ρ| > 0.95) attributes. Use mutual information against weak labels (signature hits, red-team flows) and SHAP-based pruning on the Phase 2 re-ranker. Keep about 25–40 final features to stay inside the latency budget.
+5. **Feature Creation (highest-leverage step)**: Compute **windowed per-entity behavioural features** in Flink (10 s / 60 s / 5 min tumbling and sliding windows keyed by source host, destination host, and service). Examples: unique destination ports/IPs contacted (scan detection), outbound/inbound byte ratio, fan-out count, failed-connection (RST/SYN-without-ACK) ratio, deviation from the host's own 7-day hour-of-week baseline, new-destination rate, periodicity/beaconing score (inter-arrival time coefficient of variation), and DNS query entropy where available. Per-flow scoring alone misses multi-flow attacks such as scans, beaconing, and slow exfiltration, so these aggregates are essential.
+6. **Outlier Handling**: Do **not** clip outliers in scoring inputs, because outliers are the signal. For *training* sets, remove known-benign heavy hitters (backup servers, CDN, patch distribution) via an allow-list or model them in their own segment, and drop flows that matched signature alerts to reduce baseline contamination.
+7. **Class Balancing**: Not applicable to the unsupervised detector. Calibrate the `contamination` prior / threshold to the alert budget instead. For the Phase 2 LightGBM re-ranker, use `scale_pos_weight` and choose the threshold by PR curve.
+8. **Data Augmentation**: Inject synthetic attacks (scans, beaconing, exfiltration bursts, SYN floods) generated with red-team tools and public datasets (for example, CIC-IDS2017/2018, UNSW-NB15) into held-out evaluation windows to measure recall on attack types. These are used **only for evaluation and threshold calibration**, never for training the unsupervised baseline.
+9. **Domain-Specific Processing**: Use time-of-day and day-of-week encodings (cyclical sin/cos) or time-segmented baselines for diurnal and weekly seasonality. Track per-entity baselines in Feast (online Redis store) with sub-ms lookups. Keep flow-metadata-only inputs to respect non-intrusive inspection: payload entropy must be computed at the sensor as a scalar, without retaining payload content.
 
 ---
 
 ## 10. Evaluation Metrics
 
-* **Primary Optimization Metric**: **Precision@K** (Top 1% Anomaly Score ranking, target ≥ 88%) and **False Positive Rate (FPR)** (target ≤ 0.5%).
+* **Primary Optimization Metric**: **Precision@K** on labeled audit sets and red-team / synthetic-injection windows, together with **FPR** at the operating threshold.
+  * *Metric definition caveat*: With a 0.05–0.1% true anomaly rate, the "top 1% of scores" contains 10–20× more flows than there are real anomalies. Precision over the top 1% of *all* traffic is therefore capped at ~5–10%, so the ≥ 88% target is only achievable if **K is sized to the expected anomaly count** (for example, top 0.05–0.1%) or measured on **curated audit sets** with a higher anomaly prevalence. This definition must be agreed with stakeholders in Phase 1.
+  * *Operational caveat*: An FPR of 0.5% on 500K flows/s is ~2,500 false-positive *flows per second*. The SOC-facing metric must therefore be measured at the **incident level**, after deduplication and correlation of flow alerts into entity-level incidents over time windows. Otherwise the noise-reduction KPI cannot be met.
 * **Secondary Metrics**:
-  * **PR-AUC (Precision-Recall Area Under Curve)**: Evaluates score ranking quality under severe imbalance.
-  * **Inference Latency SLA**: p99 latency < 10 ms per packet flow record.
-  * **Throughput Capacity**: Sustained 500,000 flow events scored per second.
-* **Validation Strategy**: **Temporal Walk-Forward Validation** on 30 days of historical NetFlow logs, evaluated against synthetic injection of 15 zero-day attack patterns (e.g. DNS tunneling, lateral SMB movement, slow-rate exfiltration).
-* **Hyperparameter Optimization**: **Optuna** framework optimizing tree count, subsampling rate, and hyperplane extension level.
+  * PR-AUC and ROC-AUC on audit/red-team sets (threshold-independent model comparison).
+  * Recall per attack family (scan, brute-force, C2 beaconing, exfiltration, DoS) on injected attacks, to check zero-day generalization by holding whole families out.
+  * Time-to-detect (attack onset → alert) in red-team exercises, against the < 30 s MTTD target.
+  * Incident-level SOC metrics: alerts per analyst-hour, analyst-confirmed true-positive rate, noise reduction against the legacy IDS baseline.
+  * Systems metrics: P50/P99 scoring latency, throughput (events/s), consumer lag, and service availability.
+  * Attribution quality: analyst agreement rating that the top-3 features explain the alert.
+* **Cross-Validation Strategy**: **Strict temporal splits** (train on days *t−N…t−1*, evaluate on day *t*) with rolling-origin backtesting across several weeks to capture drift. Attack-family hold-out (leave-one-attack-family-out) to simulate zero-day conditions. No random shuffling across time.
+* **Hyperparameter Tuning Framework**: **Optuna**, maximizing Precision@K / PR-AUC on the labeled validation windows under a hard latency constraint (trial rejected if ONNX P99 > 3 ms per micro-batch on the target edge CPU). Search space: `n_estimators`, `max_samples`, `max_features`, segment granularity, and threshold quantile (plus architecture and bottleneck size for the AE).
 
 ---
 
 ## 11. Production Architecture & MLOps
 
-```
-[NetFlow / IPFIX Telemetry] 
-        │ (500,000 events/sec)
-        ▼
-[Apache Kafka Ingestion] ──► [Apache Flink Stream Processor] ──► [Feast Online Feature Store (Redis)]
-                                        │
-                                        ▼ (Enriched Features)
-                               [Triton Inference Server]
-                               (C++ ONNX Runtime Engine)
-                                        │
-                         ┌──────────────┴──────────────┐
-                         ▼                             ▼
-                 [Score < Threshold]           [Score ≥ Threshold]
-                     (Pass Traffic)                    │
-                                                       ▼
-                                        [SOC Grafana Alerting Dashboard]
-                                        (UMAP 2D Topology + Feature Attribution)
-```
-
-* **Inference Mode**: Real-Time Streaming (<10 ms latency).
-* **Training Mode**: Offline daily batch retraining on rolling 30-day baseline telemetry.
-* **Feature Store**: **Feast** (Redis online store for real-time feature lookup; DuckDB/Parquet offline store).
-* **Model Registry**: **MLflow** with strict model artifact versioning and schema signature enforcement.
-* **Serving Microservice**: **Triton Inference Server** with C++ ONNX Runtime execution provider and dynamic batching.
-* **CI/CD Pipeline**: GitHub Actions compiling C++ ONNX artifacts and executing automated integration benchmarks.
-* **Monitoring & Observability**: **Prometheus + Grafana** tracking score drift via Population Stability Index (PSI) and Kolmogorov-Smirnov (KS) tests against baseline traffic.
-* **Deployment Strategy**: Shadow deployment for 48 hours, followed by Blue-Green rollout to perimeter edge routers.
+* **Inference Mode**: Streaming. Perimeter router exporters → **Kafka** (partitioned by source host) → **Flink** (parsing, windowed feature aggregation, Feast online lookups) → **Triton Inference Server** (ONNX Runtime CPU backend, dynamic batching with ≤ 2 ms queue delay) → anomaly score and alert flag → Kafka `alerts` topic → SIEM/SOAR. Attribution (TreeSHAP/DIFFI) runs in an **asynchronous enrichment stage** only for flows above threshold (~250–500/s), so it never blocks the < 10 ms hot path.
+* **Training Mode**: Offline rolling retrains. Isolation Forest retrains **daily** on a sliding 7–14 day window of filtered baseline traffic (minutes of compute). The autoencoder retrains weekly. Per-entity EWMA baselines update **incrementally** in Flink state.
+* **Feature Store**: **Feast** with an online **Redis** store for per-entity baselines and windowed aggregates, and an offline store (Parquet/Delta on object storage) for training and point-in-time-correct backtesting.
+* **Model Registry**: **MLflow Model Registry**, with ONNX artifacts, the training-window manifest, threshold calibration, and feature schema versioned together for ISO 27001 / SOC 2 auditability.
+* **Experiment Tracking**: **MLflow** (tracks Optuna trials, Precision@K, FPR, latency benchmarks per run).
+* **Model Serving**: **Triton Inference Server** with the ONNX Runtime C++ backend on edge CPU nodes, with optional GPU for the AE ensemble at high-throughput sites. The robust-statistics baseline runs inside Flink as a fallback scorer.
+* **CI/CD Pipeline**: **GitHub Actions / GitLab CI**: unit and schema tests, ONNX export parity tests (sklearn vs ONNX score equality within tolerance), latency/throughput load tests at 500K events/s, red-team replay regression suite, then promotion through the MLflow stages.
+* **Monitoring & Drift Detection**: **Prometheus + Grafana** for latency, throughput, consumer lag, and alert rate. **PSI** and KS-tests per feature and on the anomaly-score distribution, plus **ADWIN / Page-Hinkley** on streaming alert rates to catch abrupt shifts. **Evidently AI** for scheduled drift reports. An alert-budget monitor pages MLOps if the alert rate deviates > 3× from the expected contamination.
+* **Deployment Strategy**: **Shadow mode** first (4–6 weeks scoring in parallel with legacy IDS, no SOC exposure), then **canary** by perimeter site/zone (5% → 25% → 100%), with automatic rollback on alert-rate or latency anomalies. Automated isolation actions are enabled only after analyst-validated precision is proven, starting with reversible actions (for example, rate-limiting, quarantine VLAN with auto-expiry).
+* **Retraining Strategy**: Scheduled daily (IF) and weekly (AE) retrains, plus **drift-triggered** retraining when feature PSI > 0.2 or the score distribution shifts significantly. Change-management hooks let NOC flag planned topology changes so retraining can be timed accordingly. Phase 2: the LightGBM re-ranker retrains weekly on accumulated SOC dispositions.
 
 ---
 
@@ -183,10 +193,15 @@ Unsupervised Machine Learning is uniquely capable of building multi-dimensional 
 
 | Risk | Likelihood | Impact | Mitigation Strategy |
 | :--- | :--- | :--- | :--- |
-| **Concept Drift from Baseline Shift** (e.g., major network topology change) | High | High | Automated PSI monitoring ($PSI > 0.25$) triggering automated baseline retraining pipelines in Flink/Airflow. |
-| **Adversarial Evading Attacks** (Low-and-slow exfiltration) | Medium | High | Multi-scale rolling temporal windows (10s, 60s, 300s aggregations) to capture prolonged subtle anomalies. |
-| **Latency Spikes Under High Burst Load** | Medium | Medium | C++ ONNX model compilation with fixed memory allocation and thread pool pinning in Triton. |
-| **SOC Analyst Fatigue from False Positives** | High | High | Strict threshold calibration setting FPR ≤ 0.5% and requiring top 3 feature attribution breakdown for every alert. |
+| **Baseline contamination** (ongoing undetected attacks learned as "normal") | Medium | High | Filter signature-matched flows and known incidents from training windows; use robust subsampling; keep a long-horizon "golden" baseline model to compare against the rolling model; run periodic threat hunts. |
+| **Concept drift** (new services, cloud migrations, topology changes cause false-positive storms) | High | High | Daily rolling retrains; PSI/ADWIN drift detection; NOC change-calendar integration; per-segment models; alert-budget guardrails that auto-throttle and escalate. |
+| **Alert volume exceeds SOC capacity** (0.5% FPR at 500K/s ≈ 2,500 false flows/s) | High | High | Incident-level correlation (group by entity and time window), severity tiering, SOAR deduplication, threshold set from analyst capacity, Phase 2 supervised re-ranker trained on dispositions. |
+| **Precision@K target unattainable as literally defined** | High | Medium | Redefine K relative to the expected anomaly count, or measure on curated audit sets; agree the metric with stakeholders in Phase 1. |
+| **Adversarial evasion** (attackers mimic normal traffic or poison the baseline slowly) | Medium | High | Ensemble IF + AE + signatures (diverse detectors); per-entity long-horizon baselines; monitor gradual baseline shifts; red-team adversarial testing each quarter. |
+| **Latency SLA breaches** under traffic bursts / DDoS | Medium | High | Micro-batching with bounded queue delay; Kafka backpressure plus horizontal Triton autoscaling; attribution kept off the hot path; fallback to the in-Flink statistical scorer. |
+| **Poor or unhelpful explanations** reduce analyst trust | Medium | Medium | Map features to analyst-readable descriptions; show deviation against the entity's own baseline; collect analyst feedback on explanation quality. |
+| **Compliance / privacy** (ISO 27001, SOC 2, non-intrusive inspection) | Low | High | Flow metadata only; payload entropy computed at the sensor without content retention; IP pseudonymization in training stores; access-controlled, versioned model artifacts and audit trails in MLflow. |
+| **Unsafe automated isolation** (blocking critical business traffic) | Medium | High | Human-in-the-loop for high-impact actions; allow-list of critical assets; reversible, auto-expiring containment only; staged enablement after the shadow period. |
 
 ---
 
@@ -194,28 +209,34 @@ Unsupervised Machine Learning is uniquely capable of building multi-dimensional 
 
 | Phase | Activities | Duration |
 | :--- | :--- | :--- |
-| **1. Business Understanding** | Align SOC requirements, define alert SLA (<10ms), specify top-3 feature attribution specs. | 1 week |
-| **2. Data Collection & Streaming Pipeline** | Configure Kafka NetFlow topic ingestion and Flink stream parsing pipelines. | 2 weeks |
-| **3. Data Preparation & Cleaning** | Implement streaming null handling, schema validation, and historical cold log extraction. | 2 weeks |
-| **4. Feature Engineering** | Build Flink entropy aggregations, ratio features, and Feast Redis online store integration. | 3 weeks |
-| **5. Model Selection & Benchmarking** | Train EIF, VAE, and baseline models on historical 30-day telemetry; execute Optuna tuning. | 2 weeks |
-| **6. Model Compilation & Export** | Export trained Extended Isolation Forest to ONNX format using `skl2onnx`. | 1 week |
-| **7. Serving Infrastructure Setup** | Deploy Triton Inference Server container with C++ ONNX Runtime on edge nodes. | 2 weeks |
-| **8. Model Evaluation & Stress Testing**| Perform load testing at 500,000 QPS and inject synthetic zero-day attack traces. | 2 weeks |
-| **9. Deployment & Shadow Testing** | Deploy in shadow mode alongside legacy Snort IDS; validate alert precision. | 2 weeks |
-| **10. SOC Integration & Dashboards** | Build Grafana UMAP topology visualization and automated PagerDuty/Jira SOC alerts. | 2 weeks |
-| **11. Continuous Improvement** | Automate weekly drift-triggered retraining and feedback collection from SOC analysts. | Ongoing |
+| **1. Business Understanding** | Align SOC, CISO, NOC on KPIs; fix Precision@K and FPR definitions (incident-level vs flow-level); define alert budget and automated-response policy. | 2 weeks |
+| **2. Data Collection** | Kafka topics and schemas for NetFlow/IPFIX; data contracts with network teams; retain 30–90 days in the offline store; assemble audit sets, signature-hit history, red-team captures. | 3 weeks |
+| **3. Data Preparation** | Schema validation, deduplication, protocol-aware missing-value handling, benign heavy-hitter allow-lists, baseline contamination filtering. | 2 weeks |
+| **4. Feature Engineering** | Flink windowed per-entity aggregates; Feast online/offline store integration; cyclical time features; point-in-time-correct training datasets. | 4 weeks |
+| **5. Model Selection** | Deploy the robust-statistics baseline; benchmark IF vs EIF vs AE (plus LOF/OCSVM on samples for completeness) on temporal backtests and red-team injections. | 2 weeks |
+| **6. Training** | Per-segment Isolation Forest training pipeline; AE training on clean baselines; ONNX export and parity tests. | 2 weeks |
+| **7. Hyperparameter Tuning** | Optuna search under latency constraints; threshold calibration to the alert budget. | 2 weeks |
+| **8. Evaluation** | Precision@K, FPR, per-attack-family recall, MTTD in red-team exercises; analyst review of top-3 attributions; compliance review. | 2 weeks |
+| **9. Deployment** | Triton on edge nodes; CI/CD with latency and throughput load tests; shadow mode alongside legacy IDS (4–6 weeks), then canary rollout by site. | 6–8 weeks |
+| **10. Monitoring** | Grafana dashboards (latency, throughput, PSI, score distribution, alert rate); ADWIN/Page-Hinkley alerting; runbooks and fallback drills. | 2 weeks (parallel with 9) |
+| **11. Continuous Improvement** | SOC feedback capture → LightGBM semi-supervised re-ranker; IF + AE ensemble; graph-based lateral-movement detection; staged enablement of automated isolation. | Ongoing |
 
 ---
 
 ## 14. Final Recommendation
 
-We recommend deploying a **Hybrid Unsupervised Streaming Pipeline** powered by **Extended Isolation Forest (EIF)** exported to **ONNX Runtime** and served via **Triton Inference Server**. This solution ingests **500,000 packet flow records per second** with **< 3 ms scoring latency**, meeting the strict <10 ms SLA while reducing SOC false positive alert noise by over **65%**. Coupled with **Feast (Redis)** for feature management and **UMAP** for SOC alert visualization, this architecture delivers robust zero-day threat detection without relying on static signature rules.
+Deploy a **streaming Isolation Forest anomaly detector** over enriched per-flow and windowed per-entity NetFlow features. Serve it as ONNX on Triton at the edge for sub-3 ms P99 scoring, and attach TreeSHAP/DIFFI top-3 feature attribution asynchronously to every alert. Benchmark it against a robust statistical baseline, which also serves as the availability fallback. Add a **dense autoencoder** to form a rank-normalized ensemble when stealthy correlated anomalies need coverage, and train a **LightGBM re-ranker on SOC dispositions** to drive the ≥ 65% noise reduction. This combination should cut zero-day MTTD from 48 hours to under 30 seconds, while keeping the system explainable, auditable, and affordable at 500K events/s.
 
 ---
 
 ## 15. Confidence Level
 
-* **Confidence**: **High**
-* **Reasoning**: Extended Isolation Forest natively overcomes hyperplane axis alignment limitations on high-dimensional NetFlow metrics, while ONNX Runtime in C++ guarantees sub-3ms inference latency under high streaming throughput.
-* **Key Assumptions**: NetFlow telemetry streams reliably via Kafka with < 1% missing packet attributes, and edge compute nodes provide sufficient CPU resources (min 16 vCPUs / 32 GB RAM per Triton node) to handle 500,000 QPS.
+* **Confidence**: **Medium-High**
+* **Reasoning**: Isolation Forest is the most mature and best-matched algorithm for label-free tabular anomaly detection under tight latency and explainability constraints. The serving stack (Kafka/Flink/Feast/Triton/ONNX) is already set by the problem statement and is well proven at this scale. Confidence is held below "High" by (1) the lack of labels, which makes offline accuracy estimates depend on audit sets, red-team data, and public benchmarks that may not represent this network; (2) the arithmetic conflict between the Precision@Top-1% target and the 0.05–0.1% contamination rate, which needs the metric redefined; and (3) the high operational risk of concept drift and alert-volume management at this event rate.
+* **Key Assumptions**:
+  * At least 30–90 days of historical flow logs are retained and accessible for baseline training and backtesting.
+  * Historical audit sets / incident records and red-team exercises can supply enough weak labels for evaluation and threshold calibration.
+  * Payload entropy is computed at the sensor as a scalar statistic, consistent with non-intrusive inspection, and no payload content is stored.
+  * Alerts are consumed at the incident level (correlated and deduplicated) by a SIEM/SOAR, not as raw per-flow alerts.
+  * Edge nodes have enough CPU capacity for micro-batched ONNX inference at their share of the 500K events/s load (GPU optional).
+  * Automated isolation starts with reversible, low-blast-radius actions under a human-approved policy.

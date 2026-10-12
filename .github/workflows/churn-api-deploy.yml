@@ -1,0 +1,54 @@
+# churn-api image -> ECR -> Helm on EKS -> smoke test through API Gateway.
+# Repository variables: AWS_REGION, AWS_DEPLOY_ROLE_ARN, EKS_CLUSTER, CHURN_API_ECR (repository URL),
+#                       CHURN_API_HELM_VALUES (terraform output -raw churn_api_helm_values), API_INVOKE_URL
+# Secret: CHURN_API_SMOKE_KEY (an API key value), SMOKE_CUSTOMER_ID as a variable.
+name: churn-api-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lab-engineering-implementation/model-training-serving/customer-churn-mlops/services/churn-api/**"
+      - "lab-engineering-implementation/model-training-serving/customer-churn-mlops/deploy/helm/**"
+      - "lab-engineering-implementation/model-training-serving/customer-churn-mlops/config/features.yaml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency: {group: churn-api-deploy, cancel-in-progress: false}
+
+defaults:
+  run:
+    working-directory: lab-engineering-implementation/model-training-serving/customer-churn-mlops
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push
+        run: |
+          docker build -f services/churn-api/Dockerfile -t "${{ vars.CHURN_API_ECR }}:${GITHUB_SHA::12}" .
+          docker push "${{ vars.CHURN_API_ECR }}:${GITHUB_SHA::12}"
+      - uses: azure/setup-helm@v4
+      - name: Helm upgrade (rolling, maxUnavailable=0; rolls back on failure)
+        run: |
+          aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER }}" --region "${{ vars.AWS_REGION }}"
+          printf '%s\n' "${{ vars.CHURN_API_HELM_VALUES }}" > values-aws.yaml
+          helm upgrade --install churn-api deploy/helm/churn-api -n churn -f values-aws.yaml \
+            --set image.repository="${{ vars.CHURN_API_ECR }}" --set image.tag="${GITHUB_SHA::12}" \
+            --atomic --wait --timeout 10m
+      - name: Smoke test through API Gateway
+        run: |
+          code=$(curl -s -o response.json -w '%{http_code}' -X POST "${{ vars.API_INVOKE_URL }}" \
+            -H "x-api-key: ${{ secrets.CHURN_API_SMOKE_KEY }}" -H 'content-type: application/json' \
+            -d '{"customer_id":"${{ vars.SMOKE_CUSTOMER_ID }}"}')
+          cat response.json; test "$code" = 200

@@ -1,0 +1,34 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+name: churn_evaluate
+display_name: Out-of-time evaluation, champion comparison, fairness, latency, model card
+version: "1"
+inputs:
+  candidate_model:
+    type: uri_folder
+  train_data:
+    type: uri_folder
+  test_data:
+    type: uri_folder
+  model_name:
+    type: string
+    default: churn-lightgbm
+  champion_alias:
+    type: string
+    default: champion
+outputs:
+  evaluation_report:
+    type: uri_folder
+    description: metrics.json, model_card.md, fairness_report.html (gates.json added by CI)
+code: ../src
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+  conda_file: ../environments/training-conda.yml
+command: >-
+  python evaluate.py
+  --candidate-model ${{inputs.candidate_model}}
+  --train-data ${{inputs.train_data}}
+  --test-data ${{inputs.test_data}}
+  --model-name ${{inputs.model_name}}
+  --champion-alias ${{inputs.champion_alias}}
+  --evaluation-report ${{outputs.evaluation_report}}

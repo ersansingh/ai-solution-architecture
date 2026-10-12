@@ -1,0 +1,30 @@
+{
+  "name": "gold_customer_features",
+  "meta": {
+    "data_asset": "gold_customer_features.csv",
+    "contract_version": "1.0.0",
+    "owner": "churn-data-engineering",
+    "description": "Gold point-in-time customer feature snapshot with 90-day churn label (system-design.md 6.1, 1.4). Customer ids are keyed-HMAC pseudonyms; age_band and region are fairness-audit-only columns."
+  },
+  "expectations": [
+    {"type": "expect_table_columns_to_match_set", "kwargs": {"column_set": ["pseudo_customer_id", "country", "region", "age_band", "snapshot_date", "feature_event_ts", "label_window_start", "split", "tenure_months", "monthly_charges", "data_usage_30d_delta_pct", "support_tickets_90d", "failed_payments_90d", "contract_months_remaining", "app_sessions_30d", "churn_90d"], "exact_match": true}},
+    {"type": "expect_table_row_count_to_be_between", "kwargs": {"min_value": 46, "max_value": 50}, "meta": {"notes": "fixture baseline 48 rows; row-count drift must stay < 5%"}},
+    {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "pseudo_customer_id"}},
+    {"type": "expect_column_values_to_match_regex", "kwargs": {"column": "pseudo_customer_id", "regex": "^[0-9a-f]{64}$"}, "meta": {"notes": "pseudonymized HMAC-SHA256, never a raw identifier"}},
+    {"type": "expect_compound_columns_to_be_unique", "kwargs": {"column_list": ["pseudo_customer_id", "snapshot_date"]}},
+    {"type": "expect_column_values_to_be_in_set", "kwargs": {"column": "country", "value_set": ["NL", "DE", "ES", "IT", "FR", "BE"]}},
+    {"type": "expect_column_values_to_be_in_set", "kwargs": {"column": "split", "value_set": ["train", "valid", "calib", "test"]}},
+    {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "snapshot_date"}},
+    {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "tenure_months"}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "tenure_months", "min_value": 0, "max_value": 600}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "monthly_charges", "min_value": 0, "strict_min": true, "max_value": 10000}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "support_tickets_90d", "min_value": 0}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "failed_payments_90d", "min_value": 0}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "contract_months_remaining", "min_value": 0, "max_value": 60}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "app_sessions_30d", "min_value": 0}},
+    {"type": "expect_column_values_to_be_between", "kwargs": {"column": "data_usage_30d_delta_pct", "min_value": -100, "max_value": 1000, "mostly": 0.99}},
+    {"type": "expect_column_values_to_be_in_set", "kwargs": {"column": "churn_90d", "value_set": ["0", "1"]}},
+    {"type": "expect_column_pair_values_a_to_be_greater_than_b", "kwargs": {"column_A": "label_window_start", "column_B": "snapshot_date", "or_equal": false}, "meta": {"notes": "churn label only from the post-snapshot window"}},
+    {"type": "expect_column_pair_values_a_to_be_greater_than_b", "kwargs": {"column_A": "snapshot_date", "column_B": "feature_event_ts", "or_equal": true}, "meta": {"notes": "point-in-time: no feature newer than the snapshot"}}
+  ]
+}

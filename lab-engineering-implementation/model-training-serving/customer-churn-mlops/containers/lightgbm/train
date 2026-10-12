@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+"""SageMaker BYOC training contract:
+  /opt/ml/input/config/hyperparameters.json   (all values are strings)
+  /opt/ml/input/data/{train,validation}/*.csv (encoded, label-first, no header)
+  /opt/ml/model/                               -> model.txt
+  /opt/ml/output/failure                       on error
+Metrics are printed as `validation:auc=<v>;` for the estimator's metric_definitions.
+"""
+import glob
+import json
+import os
+import sys
+import traceback
+
+import lightgbm as lgb
+import numpy as np
+from sklearn.metrics import precision_score, recall_score, roc_auc_score
+
+PREFIX = "/opt/ml"
+
+
+def load(channel):
+    files = sorted(glob.glob(f"{PREFIX}/input/data/{channel}/*.csv"))
+    data = np.vstack([np.loadtxt(f, delimiter=",", ndmin=2) for f in files])
+    return data[:, 1:], data[:, 0]
+
+
+def main():
+    with open(f"{PREFIX}/input/config/hyperparameters.json") as fh:
+        hp = json.load(fh)
+    x_train, y_train = load("train")
+    x_val, y_val = load("validation")
+    params = {
+        "objective": "binary", "metric": "auc", "is_unbalance": True, "verbosity": -1,
+        "num_leaves": int(hp.get("num_leaves", 63)), "learning_rate": float(hp.get("learning_rate", 0.05)),
+        "feature_fraction": float(hp.get("feature_fraction", 0.8)),
+        "bagging_fraction": float(hp.get("bagging_fraction", 0.8)), "bagging_freq": 1,
+        "lambda_l1": float(hp.get("lambda_l1", 0)), "lambda_l2": float(hp.get("lambda_l2", 1)),
+    }
+    booster = lgb.train(params, lgb.Dataset(x_train, y_train), int(hp.get("num_boost_round", 500)),
+                        valid_sets=[lgb.Dataset(x_val, y_val)],
+                        callbacks=[lgb.early_stopping(30), lgb.log_evaluation(50)])
+    prob = booster.predict(x_val)
+    pred = (prob >= 0.5).astype(int)
+    print(f"validation:auc={roc_auc_score(y_val, prob):.5f};")
+    print(f"validation:precision={precision_score(y_val, pred, zero_division=0):.5f};")
+    print(f"validation:recall={recall_score(y_val, pred):.5f};")
+    booster.save_model(f"{PREFIX}/model/model.txt")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception:
+        with open(f"{PREFIX}/output/failure", "w") as fh:
+            fh.write(traceback.format_exc())
+        traceback.print_exc()
+        sys.exit(255)

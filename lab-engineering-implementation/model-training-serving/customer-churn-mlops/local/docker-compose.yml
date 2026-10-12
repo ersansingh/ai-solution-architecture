@@ -1,0 +1,101 @@
+# Local test stack (LocalStack Community + the real service code). Run from the project root:
+#   make local-up      # localstack -> terraform(envs/local) -> train -> seed -> model-server -> churn-api
+#   make local-test    # integration tests in the test container
+#   make local-down
+name: churn-local
+
+x-aws-local: &aws-local
+  AWS_ENDPOINT_URL: http://localstack:4566
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_REGION: us-east-1
+
+services:
+  localstack:
+    image: localstack/localstack:3.8.1
+    ports: ["4566:4566"]
+    environment:
+      SERVICES: s3,sqs,sns,events,ssm,dynamodb,cloudwatch,kms,iam,sts
+      EAGER_SERVICE_LOADING: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      retries: 30
+
+  terraform:
+    image: hashicorp/terraform:1.9.8
+    working_dir: /workspace/infra/terraform/envs/local
+    volumes: ["..:/workspace"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        terraform init -input=false -upgrade &&
+        terraform apply -auto-approve -input=false -var localstack_endpoint=http://localstack:4566
+    depends_on:
+      localstack: {condition: service_healthy}
+
+  trainer:
+    build: {context: .., dockerfile: local/Dockerfile.ml}
+    image: churn-ml:local
+    command: ["python", "-m", "churn.jobs.local_train", "--rows", "${ROWS:-100000}", "--work", "/work"]
+    volumes: ["work:/work"]
+
+  seed:
+    build: {context: .., dockerfile: local/Dockerfile.ml}
+    image: churn-ml:local
+    environment: *aws-local
+    command: ["python", "scripts/seed_localstack.py", "--work", "/work", "--limit", "${SEED_LIMIT:-20000}"]
+    volumes: ["work:/work"]
+    depends_on:
+      terraform: {condition: service_completed_successfully}
+      trainer: {condition: service_completed_successfully}
+
+  model-server:
+    build: {context: .., dockerfile: local/Dockerfile.ml}
+    image: churn-ml:local
+    environment:
+      MODEL_DIR: /work/model
+    ports: ["8081:8080"]
+    volumes: ["work:/work"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ping')"]
+      interval: 5s
+      retries: 30
+    depends_on:
+      trainer: {condition: service_completed_successfully}
+
+  churn-api:
+    build: {context: .., dockerfile: services/churn-api/Dockerfile}
+    image: churn-api:local
+    ports: ["8080:8080"]
+    environment:
+      <<: *aws-local
+      STAGE: prod
+      FEATURE_BACKEND: dynamodb
+      DYNAMODB_TABLE: teleconnect-online-features
+      MODEL_BACKEND: http
+      MODEL_SERVER_URL: http://model-server:8080
+      SERVING_CONFIG_PARAMETER: /teleconnect-churn/prod/serving-config
+      SERVING_CONFIG_TTL_S: "5"
+      METRICS_ENABLED: "true"
+      METRICS_INTERVAL_S: "10"
+    depends_on:
+      seed: {condition: service_completed_successfully}
+      model-server: {condition: service_healthy}
+
+  tests:
+    build: {context: .., dockerfile: local/Dockerfile.test}
+    profiles: ["test"]
+    environment:
+      <<: *aws-local
+      CHURN_API_URL: http://churn-api:8080
+      MODEL_SERVER_URL: http://model-server:8080
+      DATA_BUCKET: teleconnect-churn-local
+    volumes: ["work:/work:ro"]
+    command: ["pytest", "-q", "tests/integration"]
+    depends_on:
+      churn-api: {condition: service_started}
+
+volumes:
+  work: {}

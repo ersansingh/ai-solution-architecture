@@ -1,0 +1,30 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+name: churn_train
+display_name: Optuna-tuned GBDT (LightGBM or CatBoost), objective validation PR-AUC
+version: "1"
+inputs:
+  algorithm:
+    type: string
+    enum: [lightgbm, catboost]
+  train_data:
+    type: uri_folder
+  valid_data:
+    type: uri_folder
+  n_trials:
+    type: integer
+    default: 60
+outputs:
+  model_dir:
+    type: uri_folder
+code: ../src
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+  conda_file: ../environments/training-conda.yml
+command: >-
+  python train.py
+  --algorithm ${{inputs.algorithm}}
+  --train-data ${{inputs.train_data}}
+  --valid-data ${{inputs.valid_data}}
+  --n-trials ${{inputs.n_trials}}
+  --model-dir ${{outputs.model_dir}}

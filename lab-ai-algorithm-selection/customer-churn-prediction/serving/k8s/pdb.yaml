@@ -1,0 +1,25 @@
+# Zonal HA (system-design.md 7.7): keep >= 2 pods per KServe component during
+# node drains / AKS upgrades. Selects champion pods only (shadow is excluded).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: churn-lgbm-predictor
+  namespace: churn-serving
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      serving.kserve.io/inferenceservice: churn-lgbm
+      component: predictor
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: churn-lgbm-transformer
+  namespace: churn-serving
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      serving.kserve.io/inferenceservice: churn-lgbm
+      component: transformer

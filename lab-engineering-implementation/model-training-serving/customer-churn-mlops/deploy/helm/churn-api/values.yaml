@@ -1,0 +1,47 @@
+image:
+  repository: <account>.dkr.ecr.us-east-1.amazonaws.com/churn-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# >= 2 replicas spread over zones (R6, 99.9%); HPA scales on CPU.
+replicaCount: 3
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 12
+  targetCPUUtilizationPercentage: 60
+
+podDisruptionBudget:
+  minAvailable: 2
+
+resources:
+  requests: {cpu: 250m, memory: 256Mi}
+  limits: {cpu: "1", memory: 512Mi}
+
+containerPort: 8080
+
+serviceAccount:
+  create: true
+  name: churn-api
+  annotations: {}            # eks.amazonaws.com/role-arn: <terraform output churn_api_helm_values>
+
+# Registers pod IPs in the Terraform-managed NLB target group (API Gateway VPC link -> NLB -> pods).
+targetGroupBinding:
+  enabled: false
+  targetGroupArn: ""
+
+env:
+  STAGE: prod
+  AWS_REGION: us-east-1
+  FEATURE_BACKEND: featurestore
+  FEATURE_GROUP_NAME: teleconnect-customer-features
+  MODEL_BACKEND: sagemaker
+  ENDPOINT_NAME: customer-churn-prod
+  SERVING_CONFIG_PARAMETER: /teleconnect-churn/prod/serving-config
+  SERVING_CONFIG_TTL_S: "60"
+  MODEL_TIMEOUT_S: "1.0"
+  METRICS_ENABLED: "true"
+  METRICS_NAMESPACE: TeleConnect/Churn
+
+nodeSelector: {}
+tolerations: []

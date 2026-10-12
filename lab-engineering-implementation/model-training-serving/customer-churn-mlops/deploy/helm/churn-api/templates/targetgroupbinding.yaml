@@ -1,0 +1,13 @@
+{{- if .Values.targetGroupBinding.enabled }}
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: {{ .Release.Name }}
+  labels: {{- include "churn-api.labels" . | nindent 4 }}
+spec:
+  serviceRef:
+    name: {{ .Release.Name }}
+    port: 80
+  targetGroupARN: {{ required "targetGroupBinding.targetGroupArn is required" .Values.targetGroupBinding.targetGroupArn }}
+  targetType: ip
+{{- end }}

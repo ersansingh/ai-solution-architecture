@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels: {{- include "churn-api.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "churn-api.selector" . | nindent 4 }}
+  ports:
+    - {name: http, port: 80, targetPort: http}

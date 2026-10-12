@@ -1,0 +1,6 @@
+region            = "us-east-1"
+bucket_name       = "teleconnect-churn-yourname-lab"
+alert_emails      = ["ml-engineering@example.com"]
+github_repository = "your-org/ai-solution-architecture"
+# Lab teardown convenience; keep false anywhere data matters.
+force_destroy = true

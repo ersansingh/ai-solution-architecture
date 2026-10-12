@@ -1,0 +1,22 @@
+# Churn serving namespace (terraform var.kserve_namespace = churn-serving).
+# Bootstrap: kubectl apply -f serving/k8s/namespace.yaml (then managed by Argo CD).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: churn-serving
+  labels:
+    app.kubernetes.io/part-of: churn-platform
+    # AKS Istio add-on sidecar injection (match the installed asm revision)
+    istio.io/rev: asm-1-23
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+---
+# East-west zero trust: mTLS STRICT for every workload in the namespace
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: churn-serving
+spec:
+  mtls:
+    mode: STRICT

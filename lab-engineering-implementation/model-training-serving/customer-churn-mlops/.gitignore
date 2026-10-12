@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+/build/
+local/work/
+/data/
+.terraform/
+*.tfstate
+*.tfstate.*
+backend.hcl
+terraform.tfvars
+infra/terraform/modules/deploy/.build/
+values-aws.yaml
+load-report*

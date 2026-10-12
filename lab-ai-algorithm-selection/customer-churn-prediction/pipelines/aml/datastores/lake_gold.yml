@@ -1,0 +1,17 @@
+# Azure ML datastore -> lake ADLS Gen2 filesystem `gold` (Gold Delta tables,
+# e.g. churn_labels read by churn-training-pipeline.yml).
+# Identity-based: no `credentials` block, so no account key/SAS is stored in the
+# workspace. Jobs read with the compute cluster's identity (id-aml: Storage Blob
+# Data Contributor on the lake in terraform); prepare_data sets identity: managed.
+# account_name is a placeholder: pipelines/aml/scripts/ensure-datastores.sh
+# overrides it with --set account_name=$LAKE_STORAGE_ACCOUNT
+# (terraform output lake_storage_account_name).
+$schema: https://azuremlschemas.azureedge.net/latest/azureDataLakeGen2.schema.json
+name: lake_gold
+type: azure_data_lake_gen2
+description: Churn lake Gold zone (Delta) - identity-based access
+account_name: stlakeplaceholder
+filesystem: gold
+tags:
+  project: churn
+  zone: gold

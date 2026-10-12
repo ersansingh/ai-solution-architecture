@@ -1,0 +1,25 @@
+# k3d / kind: talks to LocalStack and the local model server running in docker-compose.
+image:
+  repository: churn-api
+  tag: local
+  pullPolicy: Never
+replicaCount: 2
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  minAvailable: 1
+resources:
+  requests: {cpu: 50m, memory: 128Mi}
+  limits: {cpu: 500m, memory: 256Mi}
+env:
+  STAGE: prod
+  AWS_REGION: us-east-1
+  AWS_ENDPOINT_URL: http://host.k3d.internal:4566
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  FEATURE_BACKEND: dynamodb
+  DYNAMODB_TABLE: teleconnect-online-features
+  MODEL_BACKEND: http
+  MODEL_SERVER_URL: http://host.k3d.internal:8081
+  SERVING_CONFIG_PARAMETER: /teleconnect-churn/prod/serving-config
+  METRICS_ENABLED: "false"
