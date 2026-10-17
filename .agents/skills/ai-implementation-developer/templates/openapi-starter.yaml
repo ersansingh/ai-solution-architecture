@@ -1,0 +1,107 @@
+openapi: 3.1.0
+info:
+  title: <System name> API
+  version: 0.1.0
+  description: >
+    Starter generated from the engineering implementation plan, section 8.
+    Replace every <placeholder>. Delete operations the plan does not require.
+servers:
+  - url: https://api.example.invalid/v1   # placeholder, not a real host
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness probe (does not call dependencies)
+      security: []
+      responses:
+        "200":
+          description: Alive
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+  /results/{resultId}:
+    get:
+      operationId: getResult
+      summary: Fetch one processing result
+      tags: [results]
+      parameters:
+        - name: resultId
+          in: path
+          required: true
+          schema: { type: string, maxLength: 128 }
+      responses:
+        "200":
+          description: The result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Result" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+        "500": { $ref: "#/components/responses/Problem" }
+  /results:
+    post:
+      operationId: submitResult
+      summary: Submit a result (idempotent)
+      tags: [results]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Result" }
+      responses:
+        "201": { description: Created }
+        "200": { description: Replay of an earlier identical request }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  responses:
+    Problem:
+      description: Error (RFC 9457)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok] }
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: string, pattern: "^-?\\d+(\\.\\d{1,4})?$", description: Decimal as string, never a float }
+        currency: { type: string, pattern: "^[A-Z]{3}$" }
+    Result:
+      type: object
+      additionalProperties: false
+      required: [id, schema_version, outcome]
+      properties:
+        id: { type: string }
+        schema_version: { type: string, const: "1" }
+        outcome:
+          type: string
+          enum: [<outcome-1>, <outcome-2>, requires_review]   # copy the closed list from the plan
+        total: { $ref: "#/components/schemas/Money" }
+    Problem:
+      type: object
+      required: [type, title, status, code, retryable, correlation_id]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code: { type: string, description: Stable machine-readable error code }
+        retryable: { type: boolean }
+        correlation_id: { type: string }

@@ -1,0 +1,102 @@
+name: invoice-recon-ci-cd
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write # OIDC to AWS, no long-lived keys
+  contents: read
+
+env:
+  AWS_REGION: eu-west-1
+  ECR_REPO: invoice-recon-reconciler
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Lint and types
+        run: |
+          ruff check .
+          mypy src
+      - name: Unit and property tests
+        run: pytest tests/unit tests/property -q
+      - name: Golden-set regression gate
+        # Fails the build on ANY unsafe auto-approval or a critical-field accuracy drop below threshold.
+        run: pytest tests/golden --golden-min-accuracy 0.95 --max-unsafe-approvals 0 -q
+      - name: Terraform fmt and validate
+        working-directory: terraform
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false
+          terraform validate
+
+  build-scan:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_BUILD_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - id: meta
+        run: echo "image=${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+      - run: docker build -t "${{ steps.meta.outputs.image }}" .
+      - name: Image vulnerability scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ steps.meta.outputs.image }}
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+      - run: docker push "${{ steps.meta.outputs.image }}"
+
+  deploy-staging:
+    needs: build-scan
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+      - name: Apply (staging, shadow mode)
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve -var environment=staging -var container_image=${{ needs.build-scan.outputs.image }}
+      - name: Shadow-mode smoke test
+        run: pytest tests/smoke --env staging -q
+
+  deploy-prod:
+    needs: [build-scan, deploy-staging]
+    runs-on: ubuntu-latest
+    environment: production # requires manual approval (Finance Controller + Engineering)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+      - name: Plan
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform plan -var environment=prod -var container_image=${{ needs.build-scan.outputs.image }} -out=tfplan
+      - name: Apply
+        working-directory: terraform
+        run: terraform apply tfplan
