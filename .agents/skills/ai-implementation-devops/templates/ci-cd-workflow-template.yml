@@ -1,0 +1,154 @@
+# Starter CI/CD workflow. Replace <placeholders>, delete stages the plan does not need.
+# Pin each third-party action to a full commit SHA before use (comment shows the version).
+# Deploy jobs are disabled until repository variable ENABLE_DEPLOY == 'true'.
+name: ci-cd
+
+on:
+  pull_request:
+    paths: ["<implementation-path>/**", ".github/workflows/ci-cd.yml"]
+  push:
+    branches: [main]
+    paths: ["<implementation-path>/**"]
+  schedule:
+    - cron: "17 2 * * *"   # nightly eval + e2e; off-peak minute avoids top-of-hour delays
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+    working-directory: <implementation-path>
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@<sha>            # vX.Y.Z
+      - uses: actions/setup-python@<sha>        # vX.Y.Z
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: <implementation-path>/requirements*.txt
+      - run: make install
+      - run: make lint
+      - run: make typecheck
+      - run: make test-unit
+      - uses: actions/upload-artifact@<sha>     # vX.Y.Z
+        if: always()
+        with:
+          name: unit-reports
+          path: <implementation-path>/reports/
+          if-no-files-found: ignore
+
+  contract:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: actions/setup-python@<sha>
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: "<implementation-path>/requirements*.txt" }
+      - run: make install
+      - run: make test-contract
+
+  component-integration:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: actions/setup-python@<sha>
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: "<implementation-path>/requirements*.txt" }
+      - run: make install
+      - run: make test-component
+      - run: docker compose -f tests/compose.yaml up -d --wait
+      - run: make test-integration
+      - if: always()
+        run: docker compose -f tests/compose.yaml down -v
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@<sha>
+        with: { fetch-depth: 0 }
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@<sha>     # vX.Y.Z
+      - name: Dependency audit
+        run: make audit                          # e.g. pip-audit -r requirements.txt
+
+  iac:
+    if: hashFiles('<implementation-path>/terraform/**') != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: hashicorp/setup-terraform@<sha>    # vX.Y.Z
+        with: { terraform_version: "<pinned>" }
+      - run: terraform fmt -check -recursive terraform
+      - run: |
+          for env in dev staging prod; do
+            terraform -chdir=terraform/envs/$env init -backend=false -input=false
+            terraform -chdir=terraform/envs/$env validate
+          done
+      - name: Policy / security scan
+        run: make iac-scan                        # checkov or trivy config, plus guardrail policies
+
+  build:
+    needs: [quality, contract, component-integration, security]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: docker build -t app:${{ github.sha }} .
+      - name: Image scan
+        run: make image-scan IMAGE=app:${{ github.sha }}
+
+  ai-eval:
+    # Runs on every PR/push/nightly here. To limit it to changes under prompts/, policies/ or model code,
+    # split it into its own workflow with `paths:` filters. Recorded model by default (no paid calls).
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: actions/setup-python@<sha>
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: "<implementation-path>/requirements*.txt" }
+      - run: make install
+      - run: make test-eval                       # compares to baseline metrics file; fails on regression
+      - run: cat reports/eval-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-dev:
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_DEPLOY == 'true'
+    needs: [build, ai-eval, iac]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: dev
+    concurrency: { group: deploy-dev, cancel-in-progress: false }
+    permissions:
+      contents: read
+      id-token: write                              # OIDC only
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: aws-actions/configure-aws-credentials@<sha>   # vX.Y.Z (translate for other clouds)
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN_DEV }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: make deploy ENV=dev IMAGE_TAG=${{ github.sha }}
+      - run: make smoke ENV=dev
+
+  # promote-staging / promote-prod: same pattern with `environment: staging|prod`
+  # (required reviewers configured on the environment), `needs: deploy-dev`, same image tag,
+  # plus make e2e on staging and an automatic rollback step on smoke failure:
+  #   - if: failure()
+  #     run: make rollback ENV=<env>
